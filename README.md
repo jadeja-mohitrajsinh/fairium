@@ -1,3 +1,5 @@
+# fairium
+
 # FairSight Core
 
 **[Google Solution Challenge 2026] Unbiased AI Decision - Ensuring Fairness and Detecting Bias in Automated Decisions**
@@ -516,3 +518,4 @@ This project is part of the Google Solution Challenge 2026.
 **Together, we can ensure AI benefits everyone equally.** 🌍
 # fairium
 # fairium
+
