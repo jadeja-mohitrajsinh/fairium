@@ -1,0 +1,66 @@
+text,label,bias_type
+We are looking for a male candidate for this position.,1,gender
+Female only need apply,1,gender
+He is better suited for this role than she is.,1,gender
+We value a collaborative and inclusive work environment and welcome candidates from diverse backgrounds.,0,none
+The ideal candidate will have strong leadership skills regardless of gender.,0,none
+White only need apply,1,race
+We prefer African American candidates for this role.,1,race
+Racial preference will be given to certain groups.,1,race
+We are an equal opportunity employer committed to diversity.,0,none
+Candidates from all racial backgrounds are encouraged to apply.,0,none
+Young only need apply,1,age
+We are looking for a young dynamic team member.,1,age
+Elderly candidates need not apply,1,age
+We welcome candidates of all experience levels and ages.,0,none
+Age is not a factor in our hiring decisions.,0,none
+Poor candidates need not apply,1,socioeconomic
+We are looking for wealthy individuals only.,1,age
+Financial status is a requirement for this position.,1,socioeconomic
+We welcome candidates from all economic backgrounds.,0,none
+Financial background is not considered in our hiring process.,0,none
+We value traditional work culture.,1,cultural
+We are looking for candidates who are a good cultural fit.,1,cultural
+Native English speakers only.,1,cultural
+We value a collaborative and inclusive work environment.,0,none
+We welcome candidates from diverse cultural backgrounds.,0,none
+Young mindset required for this role.,1,cultural
+We are looking for someone with a fresh perspective.,0,none
+Must fit in with our company culture.,1,cultural
+We value alignment with our core values.,0,none
+Traditional office culture preferred.,1,cultural
+We offer a flexible and modern work environment.,0,none
+Cultural fit is important to us.,1,cultural
+We value diversity of thought and background.,0,none
+We maintain a traditional work environment.,1,cultural
+We embrace innovation and new ideas.,0,none
+The candidate must be a native speaker.,1,cultural
+Fluency in English is required.,0,none
+We prefer candidates with a young mindset.,1,cultural
+We value innovative thinking from all perspectives.,0,none
+Traditional values are important to us.,1,cultural
+We are committed to modernizing our workplace.,0,none
+Must be able to fit in with our culture.,1,cultural
+We welcome candidates who can contribute to our diverse team.,0,none
+Do not hire people from rural backgrounds.,1,location
+No rural candidates allowed.,1,location
+We prefer urban candidates only.,1,location
+City background is required for this position.,1,location
+We welcome candidates from all geographic backgrounds.,0,none
+Location is not a factor in our hiring decisions.,0,none
+Candidates from rural and urban areas are encouraged to apply.,0,none
+We do not discriminate based on geographic location.,0,none
+Regional background is not considered.,0,none
+We value diversity in all its forms including geographic origin.,0,none
+No city dwellers need apply.,1,location
+Urban candidates only.,1,location
+We prefer people from the city.,1,location
+Rural backgrounds are not welcome here.,1,location
+We hire based on merit regardless of location.,0,none
+All locations are welcome to apply.,0,none
+Geographic diversity is important to us.,0,none
+We seek talent from everywhere.,0,none
+Location preference will be given to city residents.,1,location
+Regional bias is not tolerated here.,0,none
+Our team includes people from all over the country.,0,none
+We value perspectives from all geographic areas.,0,none

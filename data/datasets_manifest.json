@@ -1,0 +1,18 @@
+{
+  "datasets": [
+    {
+      "name": "IBM HR Analytics Employee Attrition & Performance",
+      "slug": "pavansubhasht/ibm-hr-analytics-attrition-dataset",
+      "target_dir": "data/ibm_hr_attrition",
+      "domain": "hiring",
+      "why": "Strong hiring-style dataset with demographic and employment features for fairness analysis."
+    },
+    {
+      "name": "German Credit Risk",
+      "slug": "uciml/german-credit",
+      "target_dir": "data/german_credit",
+      "domain": "lending",
+      "why": "Classic lending risk dataset with sex, age, and financial attributes for bias and fairness testing."
+    }
+  ]
+}
