@@ -97,6 +97,8 @@ class AnalysisResponse(BaseModel):
     feature_removals: List[FeatureRemoval]
     bias_report_summary: BiasReportSummary
     structured_bias_report: Dict = {}
+    shap_importance: List[Dict] = []
+    tradeoff_curves: Dict[str, List[Dict]] = {}
 
 
 class TextBiasResult(BaseModel):

@@ -26,6 +26,7 @@ from app.services.mitigation import (
     generate_structured_bias_report,
 )
 from app.services.patterns import detect_bias_drivers, detect_proxy_features
+from app.services.xai import generate_shap_importance, calculate_accuracy_fairness_tradeoff
 
 
 def _build_explanation(sensitive_column: str, group_rates: Dict[str, float], dp_diff: float) -> str:
@@ -164,6 +165,14 @@ def analyze_dataset_bias(
         affected_population=affected_population,
     )
 
+    # SHAP feature importance
+    shap_importance = generate_shap_importance(dataframe, target_column)
+    
+    # Tradeoff curves (calculating for the most sensitive column)
+    tradeoff_curves = {}
+    for sensitive_column in sensitive_columns:
+        tradeoff_curves[sensitive_column] = calculate_accuracy_fairness_tradeoff(dataframe, target_column, sensitive_column)
+
     return {
         "summary": _build_summary(target_column, sensitive_columns, fairness_results),
         "detected_target": target_column,
@@ -179,4 +188,6 @@ def analyze_dataset_bias(
         "feature_removals": feature_removals,
         "bias_report_summary": bias_report_summary,
         "structured_bias_report": structured_report,
+        "shap_importance": shap_importance,
+        "tradeoff_curves": tradeoff_curves,
     }

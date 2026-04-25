@@ -58,3 +58,41 @@ class GeminiAIService:
         except Exception as e:
             print(f"Error generating recommendation with Gemini: {e}")
             return "Review bias metrics and implement fairness-aware model training."
+            
+    async def analyze_text_for_bias(self, text: str) -> Dict:
+        """Use Gemini to detect subtle tone bias, microaggressions, and stereotypes."""
+        prompt = f"""
+        Analyze the following text for subtle biases, microaggressions, stereotypes, or tone bias.
+        
+        Text: "{text}"
+        
+        Respond ONLY with a JSON object in the following format:
+        {{
+            "bias_detected": "Yes" or "No" or "Possible",
+            "confidence": "High" or "Medium" or "Low",
+            "summary": "Brief summary of the bias found or why it's neutral",
+            "biases": [
+                {{
+                    "type": "Tone/Stereotype/Microaggression/etc",
+                    "explanation": "Why this is biased",
+                    "alternatives": ["Alternative phrasing 1", "Alternative phrasing 2"]
+                }}
+            ]
+        }}
+        """
+        
+        try:
+            response = self.model.generate_content(prompt)
+            import json
+            import re
+            
+            # Extract JSON block if surrounded by markdown
+            text_response = response.text
+            match = re.search(r'```json\n(.*?)\n```', text_response, re.DOTALL)
+            if match:
+                text_response = match.group(1)
+                
+            return json.loads(text_response)
+        except Exception as e:
+            print(f"Error analyzing text bias with Gemini: {e}")
+            return None

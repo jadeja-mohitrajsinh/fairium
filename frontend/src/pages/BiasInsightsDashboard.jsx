@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 
 export default function BiasInsightsDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const { result, type } = location.state || {};
   const [expandedSections, setExpandedSections] = useState({});
+  const [showMitigationModal, setShowMitigationModal] = useState(false);
+  const [mitigationMethod, setMitigationMethod] = useState("reweighing");
+  const [tradeoffLevel, setTradeoffLevel] = useState(0);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -112,6 +115,9 @@ export default function BiasInsightsDashboard() {
           <p className="eyebrow">Dataset Bias Analysis</p>
           <h1>Bias Insights Dashboard</h1>
         </div>
+        <button className="primaryButton" onClick={() => setShowMitigationModal(true)} style={{marginLeft: 'auto'}}>
+          ✨ Debias Dataset
+        </button>
       </header>
 
       <div className="dashboardContent">
@@ -173,6 +179,39 @@ export default function BiasInsightsDashboard() {
                   <strong>No immediate action required</strong>
                 </div>
                 <p>Continue regular monitoring and bias audits.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Explainable AI & Proxy Detection */}
+        {result.shap_importance && result.shap_importance.length > 0 && (
+          <div className="insightCard animate-slideUp delay-2">
+            <h3>🧠 Explainable AI (SHAP) & Proxy Detection</h3>
+            <p className="cardDescription">
+              True feature importance calculated using SHAP values. Features highly correlated with sensitive attributes are flagged as potential proxies.
+            </p>
+            <div className="chartContainer" style={{ height: "300px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={result.shap_importance} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="feature" type="category" width={120} />
+                  <Tooltip />
+                  <Bar dataKey="importance" fill="#111111" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Proxy warnings */}
+            {result.proxy_features && result.proxy_features.length > 0 && (
+              <div className="proxyWarnings" style={{marginTop: '20px'}}>
+                <h4>⚠️ Proxy Feature Warnings</h4>
+                {result.proxy_features.map((proxy, idx) => (
+                  <div key={idx} className="priorityAction urgent" style={{padding: '10px', marginTop: '10px'}}>
+                    <strong>{proxy.feature}</strong> acts as a proxy for <strong>{proxy.sensitive_column}</strong> (Correlation: {proxy.correlation.toFixed(2)})
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -543,6 +582,62 @@ export default function BiasInsightsDashboard() {
           )}
         </div>
 
+        {/* Accuracy vs Fairness Tradeoff Slider */}
+        {result.tradeoff_curves && Object.keys(result.tradeoff_curves).length > 0 && (
+          <div className="insightCard animate-slideUp delay-3">
+            <h3>⚖️ Accuracy vs Fairness Tradeoff</h3>
+            <p>Adjust the slider to simulate applying active bias mitigation. Notice how fairness improves while accuracy may slightly decrease.</p>
+            
+            {(() => {
+              const mainCol = Object.keys(result.tradeoff_curves)[0];
+              const curve = result.tradeoff_curves[mainCol];
+              if (!curve) return null;
+              
+              const currentPoint = curve.find(c => c.mitigation_level >= tradeoffLevel) || curve[curve.length - 1];
+              const basePoint = curve[0];
+              const accDiff = ((currentPoint.accuracy - basePoint.accuracy) * 100).toFixed(1);
+              const fairDiff = ((currentPoint.fairness - basePoint.fairness) * 100).toFixed(1);
+              
+              return (
+                <div style={{marginTop: '20px', padding: '20px', background: '#f8f8f8', border: '1px solid #e5e5e5'}}>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    step="25" 
+                    value={tradeoffLevel} 
+                    onChange={e => setTradeoffLevel(parseInt(e.target.value))} 
+                    style={{width: '100%', marginBottom: '20px', accentColor: '#111'}}
+                  />
+                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#666'}}>
+                    <span>Base Model (0%)</span>
+                    <span>Full Mitigation (100%)</span>
+                  </div>
+                  
+                  <div style={{display: 'flex', justifyContent: 'center', marginTop: '20px', gap: '40px'}}>
+                    <div style={{textAlign: 'center'}}>
+                      <div style={{fontSize: '24px', fontWeight: 'bold'}}>{(currentPoint.accuracy * 100).toFixed(1)}%</div>
+                      <div style={{fontSize: '14px', color: '#666'}}>Model Accuracy</div>
+                      <div style={{color: accDiff < 0 ? '#EF4444' : '#666', fontSize: '12px'}}>{accDiff}% from base</div>
+                    </div>
+                    <div style={{textAlign: 'center'}}>
+                      <div style={{fontSize: '24px', fontWeight: 'bold'}}>{(currentPoint.fairness * 100).toFixed(1)}%</div>
+                      <div style={{fontSize: '14px', color: '#666'}}>Fairness (DI)</div>
+                      <div style={{color: fairDiff > 0 ? '#10B981' : '#666', fontSize: '12px'}}>+{fairDiff}% from base</div>
+                    </div>
+                  </div>
+                  
+                  {tradeoffLevel > 0 && (
+                    <div style={{marginTop: '20px', textAlign: 'center', fontWeight: 'bold', color: '#111'}}>
+                      "Fairness +{fairDiff}% → Accuracy {accDiff}%"
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {result.simulation_result && (
           <div className="insightCard animate-slideUp delay-3">
             <div className="cardHeader" onClick={() => toggleSection("simulation")}>
@@ -561,6 +656,68 @@ export default function BiasInsightsDashboard() {
           </div>
         )}
       </div>
+
+      {/* Mitigation Modal */}
+      {showMitigationModal && (
+        <div className="modalOverlay" onClick={() => setShowMitigationModal(false)}>
+          <div className="modalContent animate-slideUp" onClick={e => e.stopPropagation()} style={{background: '#fff', padding: '30px', maxWidth: '500px', margin: '100px auto', border: '1px solid #e5e5e5'}}>
+            <h2>Active Bias Mitigation</h2>
+            <p style={{marginBottom: '20px', color: '#666'}}>Select a method to reduce bias in your dataset. You will need to re-upload your original CSV to apply the transformation.</p>
+            
+            <div className="formGroup" style={{marginBottom: '20px'}}>
+              <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>Mitigation Technique</label>
+              <select value={mitigationMethod} onChange={e => setMitigationMethod(e.target.value)} style={{width: '100%', padding: '10px', border: '1px solid #ccc'}}>
+                <option value="reweighing">Reweighing (Adds fairness weights)</option>
+                <option value="dir">Disparate Impact Remover (Transforms features)</option>
+              </select>
+            </div>
+            
+            <div className="formGroup" style={{marginBottom: '30px'}}>
+              <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>Original Dataset (CSV)</label>
+              <input type="file" id="mitigateFileInput" accept=".csv" style={{width: '100%'}} />
+            </div>
+
+            <div className="modalActions" style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+              <button className="secondaryButton" onClick={() => setShowMitigationModal(false)}>Cancel</button>
+              <button className="primaryButton" onClick={async () => {
+                const fileInput = document.getElementById("mitigateFileInput");
+                if (!fileInput.files[0]) {
+                  alert("Please select the original CSV file.");
+                  return;
+                }
+                const formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+                formData.append("target_column", result.detected_target);
+                // Use the highest risk sensitive column
+                const sensitiveCol = result.detected_sensitive_columns[0]; 
+                formData.append("sensitive_column", sensitiveCol);
+                formData.append("method", mitigationMethod);
+                
+                try {
+                  const response = await fetch("http://127.0.0.1:8001/mitigate", {
+                    method: "POST",
+                    body: formData
+                  });
+                  if (!response.ok) throw new Error("Mitigation failed");
+                  
+                  // Trigger download
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `mitigated_${fileInput.files[0].name}`;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  setShowMitigationModal(false);
+                } catch(err) {
+                  alert("Error: " + err.message);
+                }
+              }}>Apply & Download</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
