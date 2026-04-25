@@ -1,0 +1,1 @@
+"""FairSight Core application package."""
