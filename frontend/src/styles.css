@@ -979,6 +979,105 @@ input {
   margin-bottom: 1rem;
 }
 
+.cardDescription {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.decisionHint {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.monitorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.monitorCard {
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  padding: 0.9rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.monitorLabel {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.monitorScore {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.monitorScore-ok {
+  color: #1f2937;
+}
+
+.monitorScore-warn {
+  color: #6b7280;
+}
+
+.monitorSubtle {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.monitorCard-gate.gate-approved {
+  border-color: #a1a1aa;
+}
+
+.monitorCard-gate.gate-flagged {
+  border-color: #71717a;
+}
+
+.monitorCard-gate.gate-blocked {
+  border-color: #52525b;
+}
+
+.gateDecisionPanel {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  padding: 0.9rem;
+  border-radius: var(--radius-sm);
+  background: #fafafa;
+}
+
+.gateDecisionPanel h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.gateReason {
+  margin: 0;
+  color: var(--muted);
+}
+
+.gateActions {
+  margin-top: 0.6rem;
+}
+
+.gateActions strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.gateActions ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
 .resultItem {
   display: flex;
   justify-content: space-between;
@@ -1402,6 +1501,61 @@ input {
 
 .topGroupItem:last-child {
   border-bottom: none;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalContent h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: var(--text);
+}
+
+.modalContent label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.modalContent select,
+.modalContent input[type="file"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
 }
 
 .topGroupItem.lowest-group {

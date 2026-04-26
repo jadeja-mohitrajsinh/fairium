@@ -55,3 +55,79 @@ export async function analyzeDataset({ file }) {
 
   return response.json();
 }
+
+export async function monitorBias({ analysisPayload, historicalRiskScores = [], thresholds = {}, scenario = "general", externalMetadata = {} }) {
+  const response = await fetch("/monitor", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      analysis_payload: analysisPayload,
+      historical_risk_scores: historicalRiskScores,
+      thresholds,
+      scenario,
+      external_metadata: externalMetadata,
+    }),
+  });
+
+  if (!response.ok) {
+    let message = `Monitoring failed (${response.status})`;
+    try {
+      const payload = await response.json();
+      if (payload?.detail) {
+        message = payload.detail;
+      }
+    } catch {
+      // Keep fallback message.
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function gateDecision({
+  decisionId,
+  scenario = "general",
+  decisionPayload,
+  analysisPayload,
+  riskScoreOverride,
+  blockThreshold = 75,
+  flagThreshold = 50,
+  autoMitigation = true,
+  externalMetadata = {},
+}) {
+  const response = await fetch("/gate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      decision_id: decisionId,
+      scenario,
+      decision_payload: decisionPayload,
+      analysis_payload: analysisPayload,
+      risk_score_override: riskScoreOverride,
+      block_threshold: blockThreshold,
+      flag_threshold: flagThreshold,
+      auto_mitigation: autoMitigation,
+      external_metadata: externalMetadata,
+    }),
+  });
+
+  if (!response.ok) {
+    let message = `Decision gate failed (${response.status})`;
+    try {
+      const payload = await response.json();
+      if (payload?.detail) {
+        message = payload.detail;
+      }
+    } catch {
+      // Keep fallback message.
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}

@@ -83,60 +83,69 @@ Organizations need **accessible, actionable** bias detection tools
 
 ---
 
-## Slide 6: Key Features - Dataset Analysis
+## Slide 6: Feature Layer - Real-Time & Decision Control
 
-### Automatic Column Inference
-- Detects target and sensitive columns automatically
-- No manual configuration required
+### Core Real-Time Features
+- Real-time bias monitoring
+- Bias drift detection
+- Threshold-based bias alerts
 
-### Fairness Metrics
-- Demographic Parity Difference (DP diff)
-- Disparate Impact Ratio (DI ratio)
-- Severity classification (LOW/MODERATE/HIGH)
+### Decision Control Layer
+- Pre-decision bias evaluation API
+- Bias blocking / flagging system
+- Fairness approval layer
 
-### Advanced Detection
-- Intersectional bias (combined attributes)
-- Proxy bias detection (correlated features)
-- Confidence scoring based on data quality
-
----
-
-## Slide 7: Key Features - Text Analysis
-
-### Hybrid Detection Approach
-- **Rule-based**: Patterns for obvious bias (gender, race, age, location, cultural)
-- **ML Classifier**: Logistic Regression + TF-IDF for subtle bias
-- **Combined Scoring**: "Yes/Possible/No" bias determination
-
-### Bias Types Detected
-- Gender bias ("male candidate" → "person")
-- Age bias ("young mindset" → "innovative perspective")
-- Location bias ("no rural candidates" → "all geographic backgrounds")
-- Cultural bias ("traditional culture" → "collaborative environment")
-
-### Neutral Alternatives
-- Suggests fair language replacements
-- Helps rewrite inclusive job descriptions
+### Integration & API
+- `/analyze` endpoint
+- `/monitor` endpoint
+- `/gate` endpoint
+- External system integration support
 
 ---
 
-## Slide 8: Key Features - Mitigation & Impact
+## Slide 7: Feature Layer - Mitigation, Simulation & Explainability
 
-### Actionable Recommendations
-- Data preprocessing steps
-- Feature removal suggestions
-- Reweighting strategies
-- Before/after simulation
+### Automated Mitigation
+- Auto reweighting
+- Auto resampling
+- Threshold adjustment engine
+- Bias-corrected dataset/model output
 
-### Impact Assessment
-- Estimates affected individuals
-- Translates metrics to human impact
-- Example: *"45 individuals may be disadvantaged"*
+### Simulation & Testing
+- Fairness vs accuracy simulation
+- Scenario-based decision testing (hiring, lending, etc.)
+- Mitigation impact preview
 
-### Compliance Reporting
-- Executive summaries
-- Compliance status (COMPLIANT/MONITOR/REQUIRES_ACTION)
-- Prioritized remediation steps
+### Explainability
+- Human-readable bias explanations
+- Impacted group identification
+- Risk consequence narratives
+
+---
+
+## Slide 8: Feature Layer - Governance, Intelligence & Advanced Analysis
+
+### Compliance & Governance
+- Bias audit report generation
+- Fairness certification (non-legal)
+- Decision and mitigation tracking logs
+
+### Advanced Bias Analysis
+- Intersectional bias detection
+- Risk heatmap visualization
+- Prioritization scoring
+
+### Data Intelligence
+- Data quality analysis
+- Low sample size detection
+- Missing data bias detection
+- Skew detection
+- Pre-analysis correction suggestions
+
+### Decision Intelligence
+- Unified Bias Risk Score (0-100)
+- Multi-metric aggregation (DI, DP, confidence, impact)
+- Risk prioritization system
 
 ---
 

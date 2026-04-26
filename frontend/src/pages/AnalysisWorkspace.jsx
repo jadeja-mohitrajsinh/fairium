@@ -138,7 +138,7 @@ export default function AnalysisWorkspace() {
 
   const handleViewFullInsights = (type) => {
     if (type === "dataset" && datasetResult) {
-      navigate("/dashboard", { state: { result: datasetResult, type: "dataset" } });
+      navigate("/dashboard", { state: { result: datasetResult, type: "dataset", originalFile: file } });
     } else if (type === "text" && textResult) {
       navigate("/dashboard", { state: { result: textResult, type: "text" } });
     }

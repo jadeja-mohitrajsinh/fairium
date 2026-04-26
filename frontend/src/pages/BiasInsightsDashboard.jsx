@@ -1,15 +1,126 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
+import { gateDecision, monitorBias } from "../api";
 
 export default function BiasInsightsDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { result, type } = location.state || {};
+  const { result, type, originalFile } = location.state || {};
   const [expandedSections, setExpandedSections] = useState({});
   const [showMitigationModal, setShowMitigationModal] = useState(false);
-  const [mitigationMethod, setMitigationMethod] = useState("reweighing");
   const [tradeoffLevel, setTradeoffLevel] = useState(0);
+  const [monitorResult, setMonitorResult] = useState(null);
+  const [gateResult, setGateResult] = useState(null);
+  const [decisionLoading, setDecisionLoading] = useState(false);
+  const [decisionError, setDecisionError] = useState("");
+  const [mitigating, setMitigating] = useState(false);
+  const [mitigationResults, setMitigationResults] = useState(null);
+
+  const safeType = String(type || "").toLowerCase();
+
+  useEffect(() => {
+    if (safeType !== "dataset" || !result?.fairness_metrics) {
+      return;
+    }
+
+    let active = true;
+
+    const runDecisionFlow = async () => {
+      setDecisionLoading(true);
+      setDecisionError("");
+
+      try {
+        const historyRaw = localStorage.getItem("fairsight-risk-history");
+        const historicalRiskScores = historyRaw ? JSON.parse(historyRaw) : [];
+
+        const monitorPayload = {
+          analysisPayload: result,
+          historicalRiskScores,
+          thresholds: {
+            block: 75,
+            flag: 50,
+            drift_abs: 10,
+            drift_pct: 20,
+          },
+          scenario: "general",
+          externalMetadata: {
+            source: "dashboard",
+          },
+        };
+
+        const monitored = await monitorBias(monitorPayload);
+        if (!active) {
+          return;
+        }
+
+        setMonitorResult(monitored);
+
+        const nextHistory = [
+          ...historicalRiskScores.slice(-19),
+          monitored.decision_intelligence.unified_bias_risk_score,
+        ];
+        localStorage.setItem("fairsight-risk-history", JSON.stringify(nextHistory));
+
+        const gated = await gateDecision({
+          decisionId: `decision-${Date.now()}`,
+          scenario: "general",
+          decisionPayload: {
+            detected_target: result.detected_target,
+            compliance_status: result.bias_report_summary?.compliance_status,
+          },
+          analysisPayload: result,
+          blockThreshold: 75,
+          flagThreshold: 50,
+          autoMitigation: true,
+          externalMetadata: {
+            source: "dashboard",
+          },
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setGateResult(gated);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        setDecisionError(error?.message || "Failed to load monitor/gate insights.");
+      } finally {
+        if (active) {
+          setDecisionLoading(false);
+        }
+      }
+    };
+
+    runDecisionFlow();
+
+    return () => {
+      active = false;
+    };
+  }, [result, safeType]);
+
+  const driftTrendData = useMemo(() => {
+    if (!monitorResult?.drift) {
+      return [];
+    }
+
+    const baseline = Number(monitorResult.drift.baseline_score || 0);
+    const current = Number(monitorResult.drift.current_score || 0);
+
+    return [
+      { label: "Baseline", score: baseline },
+      { label: "Current", score: current },
+    ];
+  }, [monitorResult]);
+
+  const heatmapData = useMemo(() => {
+    return monitorResult?.risk_heatmap || [];
+  }, [monitorResult]);
+
+  const gateStatusClass = String(gateResult?.status || "").toLowerCase();
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -118,10 +229,110 @@ export default function BiasInsightsDashboard() {
         <button className="primaryButton" onClick={() => setShowMitigationModal(true)} style={{marginLeft: 'auto'}}>
           ✨ Debias Dataset
         </button>
+
+        {mitigationResults && (
+          <div style={{marginLeft: '20px', padding: '10px 15px', background: mitigationResults.warnings?.length > 0 ? '#fef3c7' : '#f0fdf4', border: mitigationResults.warnings?.length > 0 ? '1px solid #f59e0b' : '1px solid #86efac', borderRadius: '4px', fontSize: '14px'}}>
+            <strong>Method:</strong> {mitigationResults.method_used}<br/>
+            <strong>Status:</strong> <span style={{color: mitigationResults.status === 'APPROVED' ? '#16a34a' : mitigationResults.status === 'FLAGGED' ? '#d97706' : '#dc2626'}}>{mitigationResults.status}</span><br/>
+            <strong>Risk Score:</strong> {mitigationResults.risk_score}/100 | <strong>Confidence:</strong> {mitigationResults.confidence}<br/>
+            <strong>DI improved:</strong> <span style={{color: mitigationResults.improvement.di_improvement > 0 ? '#16a34a' : mitigationResults.improvement.di_improvement < 0 ? '#dc2626' : '#666'}}>{mitigationResults.improvement.di_improvement > 0 ? '+' : ''}{mitigationResults.improvement.di_improvement.toFixed(3)}</span><br/>
+            <strong>DP reduced:</strong> <span style={{color: mitigationResults.improvement.dp_reduction > 0 ? '#16a34a' : mitigationResults.improvement.dp_reduction < 0 ? '#dc2626' : '#666'}}>{mitigationResults.improvement.dp_reduction > 0 ? '+' : ''}{mitigationResults.improvement.dp_reduction.toFixed(3)}</span>
+            {mitigationResults.warnings && mitigationResults.warnings.length > 0 && (
+              <div style={{marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.1)'}}>
+                {mitigationResults.warnings.map((warning, idx) => (
+                  <div key={idx} style={{color: '#92400e', fontSize: '12px'}}>⚠️ {warning}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
       <div className="dashboardContent">
         {/* Executive Summary */}
+        <div className="insightCard animate-slideUp delay-1">
+          <h3>Real-Time Monitor & Decision Gate</h3>
+          <p className="cardDescription">
+            Unified bias risk monitoring, drift detection, and pre-decision fairness gate results.
+          </p>
+
+          {decisionLoading && <p className="decisionHint">Running monitor and gate checks...</p>}
+          {decisionError && <div className="errorBox">{decisionError}</div>}
+
+          {monitorResult && (
+            <div className="monitorGrid">
+              <div className="monitorCard">
+                <span className="monitorLabel">Unified Bias Risk Score</span>
+                <strong className="monitorScore">{monitorResult.decision_intelligence.unified_bias_risk_score}/100</strong>
+                <span className="monitorSubtle">Alerts: {monitorResult.alerts.length}</span>
+              </div>
+
+              <div className="monitorCard">
+                <span className="monitorLabel">Drift Status</span>
+                <strong className={`monitorScore ${monitorResult.drift.detected ? "monitorScore-warn" : "monitorScore-ok"}`}>
+                  {monitorResult.drift.detected ? "Detected" : "Stable"}
+                </strong>
+                <span className="monitorSubtle">Delta: {monitorResult.drift.delta}</span>
+              </div>
+
+              {gateResult && (
+                <div className={`monitorCard monitorCard-gate gate-${gateStatusClass}`}>
+                  <span className="monitorLabel">Gate Decision</span>
+                  <strong className="monitorScore">{gateResult.status}</strong>
+                  <span className="monitorSubtle">Fairness approval required: {gateResult.fairness_approval_required ? "Yes" : "No"}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {heatmapData.length > 0 && (
+            <div className="chartContainer" style={{ height: "260px", marginTop: "18px" }}>
+              <h4>Risk Heatmap</h4>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={heatmapData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="attribute" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Bar dataKey="score" fill="#111111" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {driftTrendData.length > 0 && (
+            <div className="chartContainer" style={{ height: "220px", marginTop: "12px" }}>
+              <h4>Drift Trend</h4>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={driftTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="label" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="score" stroke="#111111" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {gateResult && (
+            <div className="gateDecisionPanel">
+              <h4>Gate Decision Details</h4>
+              <p className="gateReason">{gateResult.reasons?.[0] || "No reason provided."}</p>
+              {gateResult.mitigation_actions?.length > 0 && (
+                <div className="gateActions">
+                  <strong>Recommended Mitigation Actions</strong>
+                  <ul>
+                    {gateResult.mitigation_actions.map((action, index) => (
+                      <li key={index}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {result.structured_bias_report && result.structured_bias_report.overall_summary && (
           <div className="executiveSummaryCard animate-slideUp delay-1">
             <div className="executiveHeader">
@@ -662,58 +873,137 @@ export default function BiasInsightsDashboard() {
         <div className="modalOverlay" onClick={() => setShowMitigationModal(false)}>
           <div className="modalContent animate-slideUp" onClick={e => e.stopPropagation()} style={{background: '#fff', padding: '30px', maxWidth: '500px', margin: '100px auto', border: '1px solid #e5e5e5'}}>
             <h2>Active Bias Mitigation</h2>
-            <p style={{marginBottom: '20px', color: '#666'}}>Select a method to reduce bias in your dataset. You will need to re-upload your original CSV to apply the transformation.</p>
+            <p style={{marginBottom: '20px', color: '#666'}}>Select a method to reduce bias in your dataset.</p>
             
             <div className="formGroup" style={{marginBottom: '20px'}}>
               <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>Mitigation Technique</label>
-              <select value={mitigationMethod} onChange={e => setMitigationMethod(e.target.value)} style={{width: '100%', padding: '10px', border: '1px solid #ccc'}}>
-                <option value="reweighing">Reweighing (Adds fairness weights)</option>
-                <option value="dir">Disparate Impact Remover (Transforms features)</option>
-              </select>
+              <div style={{padding: '12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '4px', fontSize: '14px'}}>
+                <strong>🤖 Auto-Debias Engine</strong><br/>
+                <small style={{color: '#666'}}>
+                  Full Real-Time Adaptive Debias Engine: Detects bias across ALL attributes, applies adaptive mitigation per attribute, validates results. Target: &gt;90% bias reduction.
+                </small>
+              </div>
             </div>
             
-            <div className="formGroup" style={{marginBottom: '30px'}}>
-              <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>Original Dataset (CSV)</label>
-              <input type="file" id="mitigateFileInput" accept=".csv" style={{width: '100%'}} />
-            </div>
+            {originalFile ? (
+              <div style={{marginBottom: '30px', padding: '15px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '4px'}}>
+                <strong>Using uploaded file:</strong> {originalFile.name}
+              </div>
+            ) : (
+              <div className="formGroup" style={{marginBottom: '30px'}}>
+                <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>Original Dataset (CSV)</label>
+                <input type="file" id="mitigateFileInput" accept=".csv" style={{width: '100%'}} />
+              </div>
+            )}
 
             <div className="modalActions" style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
               <button className="secondaryButton" onClick={() => setShowMitigationModal(false)}>Cancel</button>
-              <button className="primaryButton" onClick={async () => {
-                const fileInput = document.getElementById("mitigateFileInput");
-                if (!fileInput.files[0]) {
+              <button className="primaryButton" disabled={mitigating} onClick={async () => {
+                const fileToUse = originalFile || document.getElementById("mitigateFileInput")?.files[0];
+                if (!fileToUse) {
                   alert("Please select the original CSV file.");
                   return;
                 }
-                const formData = new FormData();
-                formData.append("file", fileInput.files[0]);
-                formData.append("target_column", result.detected_target);
-                // Use the highest risk sensitive column
-                const sensitiveCol = result.detected_sensitive_columns[0]; 
-                formData.append("sensitive_column", sensitiveCol);
-                formData.append("method", mitigationMethod);
+                
+                setMitigating(true);
                 
                 try {
-                  const response = await fetch("http://127.0.0.1:8001/mitigate", {
-                    method: "POST",
-                    body: formData
-                  });
-                  if (!response.ok) throw new Error("Mitigation failed");
+                  // Call auto-debias-analyze to get updated analysis using new Real-Time Adaptive Debias Engine
+                  const formDataAnalyze = new FormData();
+                  formDataAnalyze.append("file", fileToUse);
+                  formDataAnalyze.append("target_column", result.detected_target);
+                  formDataAnalyze.append("sensitive_columns", JSON.stringify(result.detected_sensitive_columns));
                   
-                  // Trigger download
-                  const blob = await response.blob();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `mitigated_${fileInput.files[0].name}`;
-                  document.body.appendChild(a);
-                  a.click();
-                  a.remove();
+                  const analyzeResponse = await fetch("/auto-debias-analyze", {
+                    method: "POST",
+                    body: formDataAnalyze
+                  });
+                  
+                  if (!analyzeResponse.ok) throw new Error("Mitigation analysis failed");
+                  
+                  const newResult = await analyzeResponse.json();
+                  
+                  // Update dashboard with new analysis results
+                  navigate("/dashboard", { 
+                    state: { 
+                      result: newResult.analysis_result, 
+                      type: "dataset", 
+                      originalFile: fileToUse 
+                    },
+                    replace: true
+                  });
+                  
+                  // Also download the mitigated CSV using auto-debias endpoint
+                  const downloadFormData = new FormData();
+                  downloadFormData.append("file", fileToUse);
+                  downloadFormData.append("target_column", result.detected_target);
+                  downloadFormData.append("sensitive_columns", JSON.stringify(result.detected_sensitive_columns));
+                  
+                  const downloadResponse = await fetch("/auto-debias", {
+                    method: "POST",
+                    body: downloadFormData
+                  });
+                  if (downloadResponse.ok) {
+                    const blob = await downloadResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `auto_debiased_${fileToUse.name}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                  }
+                  
+                  // Compute actual DI improvement and DP reduction from before/after metrics
+                  const pipelineResult = newResult.pipeline_result || {};
+                  const beforeMetrics = pipelineResult.before_metrics || {};
+                  const afterMetrics = pipelineResult.after_metrics || {};
+                  
+                  console.log("Pipeline result:", pipelineResult);
+                  console.log("Before metrics:", beforeMetrics);
+                  console.log("After metrics:", afterMetrics);
+                  
+                  let totalDiImprovement = 0;
+                  let totalDpReduction = 0;
+                  let attrCount = 0;
+                  
+                  Object.keys(beforeMetrics).forEach(attr => {
+                    const before = beforeMetrics[attr];
+                    const after = afterMetrics[attr];
+                    if (before && after) {
+                      const diImprovement = (after.di_ratio || 0) - (before.di_ratio || 0);
+                      const dpReduction = (before.dp_diff || 0) - (after.dp_diff || 0);
+                      totalDiImprovement += diImprovement;
+                      totalDpReduction += dpReduction;
+                      attrCount++;
+                      console.log(`Attr ${attr}: DI before=${before.di_ratio}, after=${after.di_ratio}, improvement=${diImprovement}`);
+                    }
+                  });
+                  
+                  const avgDiImprovement = attrCount > 0 ? totalDiImprovement / attrCount : 0;
+                  const avgDpReduction = attrCount > 0 ? totalDpReduction / attrCount : 0;
+                  
+                  console.log(`Average DI improvement: ${avgDiImprovement}, Average DP reduction: ${avgDpReduction}`);
+                  
+                  // Set mitigation results from pipeline
+                  setMitigationResults({
+                    method_used: pipelineResult.method_used || "Real-Time Adaptive Debias Engine",
+                    status: pipelineResult.status || "UNKNOWN",
+                    risk_score: pipelineResult.risk_score || 0,
+                    confidence: pipelineResult.confidence || "UNKNOWN",
+                    warnings: (pipelineResult.quality_gate && pipelineResult.quality_gate.issues) || [],
+                    improvement: {
+                      di_improvement: avgDiImprovement,
+                      dp_reduction: avgDpReduction
+                    }
+                  });
                   setShowMitigationModal(false);
                 } catch(err) {
                   alert("Error: " + err.message);
+                } finally {
+                  setMitigating(false);
                 }
-              }}>Apply & Download</button>
+              }}>{mitigating ? "Processing..." : "Apply & Download"}</button>
             </div>
           </div>
         </div>

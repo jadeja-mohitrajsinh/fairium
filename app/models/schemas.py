@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -117,3 +117,103 @@ class TextBiasAnalysisResponse(BaseModel):
     overall_confidence: str
     ml_confidence: Optional[float] = None
     summary: str
+
+
+class BiasDriftResult(BaseModel):
+    detected: bool
+    delta: float
+    percent_change: float
+    baseline_score: float
+    current_score: float
+    explanation: str
+
+
+class BiasAlert(BaseModel):
+    level: str
+    message: str
+    threshold: float
+    current_value: float
+
+
+class RiskHeatmapCell(BaseModel):
+    attribute: str
+    score: float
+    risk_level: str
+
+
+class PrioritizationItem(BaseModel):
+    attribute: str
+    priority_score: float
+    priority_level: str
+    rationale: str
+
+
+class DataIntelligenceInsight(BaseModel):
+    category: str
+    severity: str
+    finding: str
+    suggestion: str
+
+
+class MitigationPreviewItem(BaseModel):
+    attribute: str
+    method: str
+    expected_risk_reduction: float
+    expected_fairness_gain: str
+    notes: str
+
+
+class DecisionIntelligenceSummary(BaseModel):
+    unified_bias_risk_score: int = Field(..., ge=0, le=100)
+    aggregated_metrics: Dict[str, float]
+    prioritization: List[PrioritizationItem]
+
+
+class MonitorRequest(BaseModel):
+    analysis_payload: Dict[str, Any]
+    historical_risk_scores: List[float] = []
+    thresholds: Dict[str, float] = {}
+    scenario: Optional[str] = None
+    external_metadata: Dict[str, Any] = {}
+
+
+class MonitorResponse(BaseModel):
+    generated_at: str
+    decision_intelligence: DecisionIntelligenceSummary
+    drift: BiasDriftResult
+    alerts: List[BiasAlert]
+    risk_heatmap: List[RiskHeatmapCell]
+    data_intelligence: List[DataIntelligenceInsight]
+    mitigation_preview: List[MitigationPreviewItem]
+    explainability: List[str]
+    impacted_groups: List[str]
+    audit_report: Dict[str, Any]
+    tracking_log_id: str
+
+
+class GateRequest(BaseModel):
+    decision_id: str
+    scenario: str = "general"
+    decision_payload: Dict[str, Any]
+    analysis_payload: Dict[str, Any]
+    risk_score_override: Optional[int] = Field(default=None, ge=0, le=100)
+    block_threshold: int = Field(default=75, ge=0, le=100)
+    flag_threshold: int = Field(default=50, ge=0, le=100)
+    auto_mitigation: bool = True
+    external_metadata: Dict[str, Any] = {}
+
+
+class GateResponse(BaseModel):
+    generated_at: str
+    decision_id: str
+    scenario: str
+    status: str
+    fairness_approval_required: bool
+    fairness_approved: bool
+    bias_risk_score: int = Field(..., ge=0, le=100)
+    reasons: List[str]
+    impacted_groups: List[str]
+    risk_consequences: List[str]
+    mitigation_actions: List[str]
+    fairness_certificate: Dict[str, Any]
+    tracking_log_id: str

@@ -18,6 +18,62 @@ AI systems increasingly make critical decisions affecting human lives. When trai
 
 ## ✨ Key Features
 
+### Feature Layer (Upgraded)
+
+#### Core Real-Time Features
+- Real-time bias monitoring
+- Bias drift detection
+- Threshold-based bias alerts
+
+#### Decision Control Layer
+- Pre-decision bias evaluation API
+- Bias blocking / flagging system
+- Fairness approval layer
+
+#### Automated Mitigation
+- Auto reweighting
+- Auto resampling
+- Threshold adjustment engine
+- Bias-corrected dataset/model output
+
+#### Simulation & Testing
+- Fairness vs accuracy simulation
+- Scenario-based decision testing (hiring, lending, etc.)
+- Mitigation impact preview
+
+#### Explainability
+- Human-readable bias explanations
+- Impacted group identification
+- Risk consequence narratives
+
+#### Compliance & Governance
+- Bias audit report generation
+- Fairness certification (non-legal)
+- Decision and mitigation tracking logs
+
+#### Advanced Bias Analysis
+- Intersectional bias detection
+- Risk heatmap visualization
+- Prioritization scoring
+
+#### Data Intelligence
+- Data quality analysis
+- Low sample size detection
+- Missing data bias detection
+- Skew detection
+- Pre-analysis correction suggestions
+
+#### Integration & API
+- `/analyze` endpoint
+- `/monitor` endpoint
+- `/gate` endpoint
+- External system integration support
+
+#### Decision Intelligence
+- Unified Bias Risk Score (0-100)
+- Multi-metric aggregation (DI, DP, confidence, impact)
+- Risk prioritization system
+
 ### 🔍 Comprehensive Bias Detection
 - **Automatic column inference** - Intelligently detects target and sensitive columns from your data
 - **Fairness metrics** - Demographic Parity Difference, Disparate Impact Ratio, and more
@@ -368,6 +424,86 @@ Analyze text for potential bias using hybrid ML + rule-based detection.
   "summary": "Summary of findings"
 }
 ```
+
+### `POST /monitor`
+Real-time monitoring endpoint for unified bias risk scoring, drift detection, and threshold alerts.
+
+**Request:**
+```json
+{
+  "analysis_payload": {
+    "detected_target": "hired",
+    "fairness_metrics": {
+      "gender": {
+        "dp_diff": 0.18,
+        "di_ratio": 0.62,
+        "confidence": "HIGH",
+        "group_rates": {"male": 0.78, "female": 0.60},
+        "simulation": {"improvement": "35%"}
+      }
+    },
+    "affected_population": {
+      "gender": {
+        "total_affected_individuals": 52,
+        "affected_groups": [{"group": "female", "disadvantaged_count": 52}]
+      }
+    },
+    "notes": ["5.2% missing values in sensitive columns"]
+  },
+  "historical_risk_scores": [44, 47, 52, 55],
+  "thresholds": {
+    "flag": 50,
+    "block": 75,
+    "drift_abs": 10,
+    "drift_pct": 20
+  },
+  "scenario": "hiring",
+  "external_metadata": {"model_version": "2026.04.1"}
+}
+```
+
+**Response:** includes `decision_intelligence.unified_bias_risk_score`, `drift`, `alerts`, `risk_heatmap`, `mitigation_preview`, and `tracking_log_id`.
+
+### `POST /gate`
+Pre-decision fairness gate endpoint with blocking/flagging logic and mitigation guidance.
+
+**Request:**
+```json
+{
+  "decision_id": "loan-application-10042",
+  "scenario": "lending",
+  "decision_payload": {
+    "applicant_id": "A-901",
+    "recommended_outcome": "approve"
+  },
+  "analysis_payload": {
+    "detected_target": "approved",
+    "fairness_metrics": {
+      "race": {
+        "dp_diff": 0.21,
+        "di_ratio": 0.59,
+        "confidence": "MEDIUM",
+        "group_rates": {"group_a": 0.72, "group_b": 0.51},
+        "simulation": {"improvement": "40%"},
+        "explanation": "Group B receives markedly fewer positive outcomes."
+      }
+    },
+    "affected_population": {
+      "race": {
+        "total_affected_individuals": 88,
+        "affected_groups": [{"group": "group_b", "disadvantaged_count": 88}]
+      }
+    },
+    "notes": ["Distribution skew detected in applicant history"]
+  },
+  "block_threshold": 75,
+  "flag_threshold": 50,
+  "auto_mitigation": true,
+  "external_metadata": {"channel": "api-gateway"}
+}
+```
+
+**Response:** includes `status` (`APPROVED`/`FLAGGED`/`BLOCKED`), `fairness_approval_required`, `mitigation_actions`, `fairness_certificate`, and `tracking_log_id`.
 
 ### `GET /health`
 Health check endpoint.
