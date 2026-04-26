@@ -5,14 +5,19 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$ROOT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
-echo "Starting FairSight backend on http://127.0.0.1:8000 ..."
+# Source environment variables if .env exists
+if [ -f "$ROOT_DIR/.env" ]; then
+    export $(grep -v '^#' "$ROOT_DIR/.env" | xargs)
+fi
+
+echo "Starting FairSight backend on http://127.0.0.1:8001 ..."
 cd "$ROOT_DIR"
-python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload >"$LOG_DIR/backend.out.log" 2>"$LOG_DIR/backend.err.log" &
+./.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload >"$LOG_DIR/backend.out.log" 2>"$LOG_DIR/backend.err.log" &
 BACKEND_PID=$!
 
 echo "Starting FairSight frontend on http://127.0.0.1:5173 ..."
 cd "$ROOT_DIR/frontend"
-npm run dev -- --host 127.0.0.1 --port 5173 >"$LOG_DIR/frontend.out.log" 2>"$LOG_DIR/frontend.err.log" &
+npm run dev -- --port 5173 >"$LOG_DIR/frontend.out.log" 2>"$LOG_DIR/frontend.err.log" &
 FRONTEND_PID=$!
 
 cat >"$ROOT_DIR/.run_pids" <<EOF

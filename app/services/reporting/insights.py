@@ -1,8 +1,7 @@
-"""Enhanced bias insights generation for human-readable interpretation."""
-
 from typing import Dict, List, Tuple
 import pandas as pd
 import numpy as np
+from app.core.logging import logger
 
 
 def classify_severity(dp_diff: float) -> str:
@@ -234,11 +233,11 @@ def build_enhanced_explanation(
     if ratio == float('inf') or lowest_rate == 0:
         explanation += "This represents an extreme disparity due to zero outcomes in one group."
     elif ratio < 2:
-        explanation += f"This represents a {ratio:.1f}× difference in outcomes."
+        explanation += f"This represents a {ratio:.1f}x difference in outcomes."
     elif ratio < 5:
-        explanation += f"This represents a {ratio:.1f}× difference in outcomes, indicating a notable disparity."
+        explanation += f"This represents a {ratio:.1f}x difference in outcomes, indicating a notable disparity."
     else:
-        explanation += f"This represents a {ratio:.1f}× difference in outcomes, indicating a significant disparity."
+        explanation += f"This represents a {ratio:.1f}x difference in outcomes, indicating a significant disparity."
     
     # Add sample size context
     highest_samples = next((g["total_samples"] for g in group_analysis if g["group"] == highest_group), 0)
@@ -249,3 +248,150 @@ def build_enhanced_explanation(
                       f"and {lowest_samples} for '{lowest_group}'.")
     
     return explanation
+
+def estimate_affected_population(
+    dataframe: pd.DataFrame,
+    sensitive_column: str,
+    group_rates: Dict[str, float],
+    mean_rate: float,
+) -> Dict:
+    """Estimate how many individuals are affected by bias."""
+    group_counts = dataframe[sensitive_column].value_counts()
+    affected_groups = []
+    total_affected = 0
+    
+    for group, rate in group_rates.items():
+        group_count = int(group_counts.get(group, 0))
+        expected_positive = int(group_count * mean_rate)
+        actual_positive = int(group_count * rate)
+        
+        if rate < mean_rate:
+            disadvantaged = expected_positive - actual_positive
+            total_affected += disadvantaged
+            affected_groups.append({
+                "group": group,
+                "disadvantaged_count": int(disadvantaged),
+                "total_count": group_count,
+                "selection_rate": float(rate),
+                "expected_rate": float(mean_rate),
+            })
+    
+    return {
+        "total_affected_individuals": int(total_affected),
+        "affected_groups": affected_groups,
+        "explanation": (
+            f"Approximately {int(total_affected)} individuals across {len(affected_groups)} "
+            f"groups may be disadvantaged by current disparities."
+        ),
+    }
+
+def generate_bias_report_summary(
+    fairness_metrics: Dict[str, Dict],
+    sensitive_columns: List[str],
+    dataframe_size: int,
+) -> Dict:
+    """Generate a comprehensive bias report summary for compliance."""
+    high_severity = [col for col, m in fairness_metrics.items() if m.get("severity") == "HIGH"]
+    moderate_severity = [col for col, m in fairness_metrics.items() if m.get("severity") == "MODERATE"]
+    
+    overall_risk = "HIGH" if high_severity else "MODERATE" if moderate_severity else "LOW"
+    key_issue = "No significant bias detected"
+    if high_severity:
+        key_issue = f"High disparity in {high_severity[0]} requires immediate attention"
+    elif moderate_severity:
+        key_issue = f"Moderate disparity in {moderate_severity[0]} should be monitored"
+    
+    return {
+        "overall_risk_level": overall_risk,
+        "total_sensitive_attributes_analyzed": len(sensitive_columns),
+        "total_records_analyzed": dataframe_size,
+        "high_risk_attributes": high_severity,
+        "moderate_risk_attributes": moderate_severity,
+        "low_risk_attributes": [
+            col for col, m in fairness_metrics.items() if m.get("severity") == "LOW"
+        ],
+        "compliance_status": "REQUIRES_ACTION" if high_severity else "MONITOR" if moderate_severity else "COMPLIANT",
+        "key_issue": key_issue,
+        "recommendation_summary": (
+            f"Analysis of {dataframe_size} records across {len(sensitive_columns)} sensitive attributes "
+            f"reveals {overall_risk} overall risk. "
+            f"{len(high_severity)} attributes require immediate attention."
+        ),
+    }
+
+def generate_structured_bias_report(
+    dataframe: pd.DataFrame,
+    fairness_metrics: Dict[str, Dict],
+    sensitive_columns: List[str],
+    target_column: str,
+    bias_drivers: List[Dict],
+    proxy_features: List[Dict],
+    intersectional_bias: List[Dict],
+    affected_population: Dict[str, Dict],
+) -> Dict:
+    """Generate a complete, structured bias report following the specified format."""
+    dataframe_size = len(dataframe)
+    high_severity = [col for col, m in fairness_metrics.items() if m.get("severity") == "HIGH"]
+    moderate_severity = [col for col, m in fairness_metrics.items() if m.get("severity") == "MODERATE"]
+    overall_risk = "HIGH" if high_severity else "MODERATE" if moderate_severity else "LOW"
+    compliance_status = "Requires Action" if high_severity else "Monitor" if moderate_severity else "Safe"
+    
+    # 2. ATTRIBUTE-LEVEL ANALYSIS
+    attribute_analysis = []
+    for col, metrics in fairness_metrics.items():
+        if col not in sensitive_columns: continue
+        attribute_analysis.append({
+            "attribute_name": col,
+            "risk_level": metrics.get("severity", "LOW"),
+            "dp_difference": f"{metrics.get('dp_diff', 0):.1%}",
+            "di_ratio": f"{metrics.get('di_ratio', 1.0):.2f}",
+            "confidence": metrics.get("confidence", "MEDIUM"),
+            "explanation": metrics.get("explanation", ""),
+            "key_insight": metrics.get("key_insight", ""),
+            "data_reliability": metrics.get("data_reliability", "High"),
+        })
+        
+    # Group disparity
+    group_disparity = []
+    for col, metrics in fairness_metrics.items():
+        if col not in sensitive_columns: continue
+        group_rates = metrics.get("group_rates", {})
+        if group_rates:
+            sorted_rates = sorted(group_rates.items(), key=lambda x: x[1], reverse=True)
+            highest_group, highest_rate = sorted_rates[0]
+            lowest_group, lowest_rate = sorted_rates[-1]
+            ratio = highest_rate / lowest_rate if lowest_rate > 0 else float('inf')
+            group_disparity.append({
+                "attribute": col,
+                "highest_performing_group": highest_group,
+                "lowest_performing_group": lowest_group,
+                "outcome_difference": f"{ratio:.1f}x" if ratio != float('inf') else "Extreme",
+            })
+
+    # Recommendations (simplified for structural consistency)
+    urgent_actions = []
+    for col in high_severity:
+        urgent_actions.append({
+            "action": f"Mitigate {col} bias",
+            "reason": "High disparity detected",
+            "timeline": "Within 1 week",
+            "priority": "CRITICAL"
+        })
+
+    return {
+        "overall_summary": {
+            "risk_level": overall_risk,
+            "records_analyzed": dataframe_size,
+            "sensitive_attributes": len(sensitive_columns),
+            "compliance_status": compliance_status,
+            "executive_summary": f"{overall_risk} risk detected.",
+            "recommended_decision": "Proceed with caution" if high_severity else "Safe to proceed",
+        },
+        "attribute_level_analysis": attribute_analysis,
+        "group_disparity_summary": group_disparity,
+        "recommendations": {
+            "urgent_actions": urgent_actions,
+            "monitor_actions": [],
+            "safe_actions": [],
+        }
+    }

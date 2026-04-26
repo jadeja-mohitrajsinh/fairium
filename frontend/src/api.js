@@ -1,59 +1,65 @@
-export async function fetchHealth() {
-  const response = await fetch("/health");
+const API_BASE_URL = "http://localhost:8001/api";
+
+async function handleResponse(response) {
   if (!response.ok) {
-    throw new Error(`Health check failed (${response.status})`);
+    let message = `API request failed (${response.status})`;
+    try {
+      const payload = await response.json();
+      if (payload?.detail) {
+        message = payload.detail;
+      }
+    } catch {
+      // Use fallback message
+    }
+    throw new Error(message);
   }
   return response.json();
 }
 
+export async function fetchHealth() {
+  const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`);
+  return handleResponse(response);
+}
+
 export async function analyzeText({ text }) {
-  const response = await fetch("/analyze-text", {
+  const response = await fetch(`${API_BASE_URL}/analyze-text`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ text }),
   });
-
-  if (!response.ok) {
-    let message = `Text analysis failed (${response.status})`;
-    try {
-      const payload = await response.json();
-      if (payload?.detail) {
-        message = payload.detail;
-      }
-    } catch {
-      // Keep fallback message.
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
+  return handleResponse(response);
 }
 
 export async function analyzeDataset({ file }) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("/analyze", {
+  const response = await fetch(`${API_BASE_URL}/analyze`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function mitigateDataset({ file, targetColumn, sensitiveColumn, method }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("target_column", targetColumn);
+  formData.append("sensitive_column", sensitiveColumn);
+  formData.append("method", method);
+
+  const response = await fetch(`${API_BASE_URL}/mitigate`, {
     method: "POST",
     body: formData,
   });
 
   if (!response.ok) {
-    let message = `Analysis failed (${response.status})`;
-    try {
-      const payload = await response.json();
-      if (payload?.detail) {
-        message = payload.detail;
-      }
-    } catch {
-      // Keep fallback message.
-    }
-    throw new Error(message);
+    return handleResponse(response);
   }
 
-  return response.json();
+  return response.blob();
 }
 
 export async function monitorBias({ analysisPayload, historicalRiskScores = [], thresholds = {}, scenario = "general", externalMetadata = {} }) {

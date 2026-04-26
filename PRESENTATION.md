@@ -36,10 +36,10 @@ When AI learns from biased historical data, it **repeats and amplifies discrimin
 
 ### Existing Tools Have Limitations
 
-- ❌ **Technical Complexity** - Require ML expertise
-- ❌ **Metric-Only Output** - Numbers without context
-- ❌ **No Remediation** - Detect but don't fix
-- ❌ **Poor Accessibility** - Not usable by non-technical stakeholders
+-  **Technical Complexity** - Require ML expertise
+-  **Metric-Only Output** - Numbers without context
+-  **No Remediation** - Detect but don't fix
+-  **Poor Accessibility** - Not usable by non-technical stakeholders
 
 ### The Gap
 
@@ -83,69 +83,60 @@ Organizations need **accessible, actionable** bias detection tools
 
 ---
 
-## Slide 6: Feature Layer - Real-Time & Decision Control
+## Slide 6: Key Features - Dataset Analysis
 
-### Core Real-Time Features
-- Real-time bias monitoring
-- Bias drift detection
-- Threshold-based bias alerts
+### Automatic Column Inference
+- Detects target and sensitive columns automatically
+- No manual configuration required
 
-### Decision Control Layer
-- Pre-decision bias evaluation API
-- Bias blocking / flagging system
-- Fairness approval layer
+### Fairness Metrics
+- Demographic Parity Difference (DP diff)
+- Disparate Impact Ratio (DI ratio)
+- Severity classification (LOW/MODERATE/HIGH)
 
-### Integration & API
-- `/analyze` endpoint
-- `/monitor` endpoint
-- `/gate` endpoint
-- External system integration support
+### Advanced Detection
+- Intersectional bias (combined attributes)
+- Proxy bias detection (correlated features)
+- Confidence scoring based on data quality
 
 ---
 
-## Slide 7: Feature Layer - Mitigation, Simulation & Explainability
+## Slide 7: Key Features - Text Analysis
 
-### Automated Mitigation
-- Auto reweighting
-- Auto resampling
-- Threshold adjustment engine
-- Bias-corrected dataset/model output
+### Hybrid Detection Approach
+- **Rule-based**: Patterns for obvious bias (gender, race, age, location, cultural)
+- **ML Classifier**: Logistic Regression + TF-IDF for subtle bias
+- **Combined Scoring**: "Yes/Possible/No" bias determination
 
-### Simulation & Testing
-- Fairness vs accuracy simulation
-- Scenario-based decision testing (hiring, lending, etc.)
-- Mitigation impact preview
+### Bias Types Detected
+- Gender bias ("male candidate" -> "person")
+- Age bias ("young mindset" -> "innovative perspective")
+- Location bias ("no rural candidates" -> "all geographic backgrounds")
+- Cultural bias ("traditional culture" -> "collaborative environment")
 
-### Explainability
-- Human-readable bias explanations
-- Impacted group identification
-- Risk consequence narratives
+### Neutral Alternatives
+- Suggests fair language replacements
+- Helps rewrite inclusive job descriptions
 
 ---
 
-## Slide 8: Feature Layer - Governance, Intelligence & Advanced Analysis
+## Slide 8: Key Features - Mitigation & Impact
 
-### Compliance & Governance
-- Bias audit report generation
-- Fairness certification (non-legal)
-- Decision and mitigation tracking logs
+### Actionable Recommendations
+- Data preprocessing steps
+- Feature removal suggestions
+- Reweighting strategies
+- Before/after simulation
 
-### Advanced Bias Analysis
-- Intersectional bias detection
-- Risk heatmap visualization
-- Prioritization scoring
+### Impact Assessment
+- Estimates affected individuals
+- Translates metrics to human impact
+- Example: *"45 individuals may be disadvantaged"*
 
-### Data Intelligence
-- Data quality analysis
-- Low sample size detection
-- Missing data bias detection
-- Skew detection
-- Pre-analysis correction suggestions
-
-### Decision Intelligence
-- Unified Bias Risk Score (0-100)
-- Multi-metric aggregation (DI, DP, confidence, impact)
-- Risk prioritization system
+### Compliance Reporting
+- Executive summaries
+- Compliance status (COMPLIANT/MONITOR/REQUIRES_ACTION)
+- Prioritized remediation steps
 
 ---
 
@@ -177,7 +168,7 @@ Organizations need **accessible, actionable** bias detection tools
 
 ### 1. Hiring & Recruitment
 - Detects gender/age bias in resume screening
-- Identifies proxy features (years of experience → age)
+- Identifies proxy features (years of experience -> age)
 - Recommends reweighting for balanced representation
 
 ### 2. Lending & Credit
@@ -224,22 +215,22 @@ Organizations need **accessible, actionable** bias detection tools
 ## Slide 12: Impact & Social Good
 
 ### For Organizations
-- ✅ Risk reduction before deployment
-- ✅ Regulatory compliance (EEOC, EU AI Act)
-- ✅ Cost savings from avoiding lawsuits
-- ✅ Trust building with communities
+-  Risk reduction before deployment
+-  Regulatory compliance (EEOC, EU AI Act)
+-  Cost savings from avoiding lawsuits
+-  Trust building with communities
 
 ### For Individuals
-- ✅ Fair treatment in automated decisions
-- ✅ Equal access to opportunities
-- ✅ Transparency in decision-making
-- ✅ Accountability for AI systems
+-  Fair treatment in automated decisions
+-  Equal access to opportunities
+-  Transparency in decision-making
+-  Accountability for AI systems
 
 ### For Society
-- ✅ Reduced algorithmic discrimination
-- ✅ Fairer outcomes across demographics
-- ✅ Encourages ethical AI development
-- ✅ Increased public trust in AI
+-  Reduced algorithmic discrimination
+-  Fairer outcomes across demographics
+-  Encourages ethical AI development
+-  Increased public trust in AI
 
 ---
 
@@ -328,7 +319,7 @@ FairSight Core contributes to UN Sustainable Development Goals:
 
 ## Slide 17: Thank You
 
-**Together, we can ensure AI benefits everyone equally.** 🌍
+**Together, we can ensure AI benefits everyone equally.** 
 
 ### Questions?
 
@@ -357,7 +348,7 @@ Google Solution Challenge 2026
 - **HIGH**: DP diff > 15%
 
 ### Confidence Scoring
-- **HIGH**: All groups ≥30 samples, balanced
+- **HIGH**: All groups >=30 samples, balanced
 - **MEDIUM**: Some groups <30 samples
 - **LOW**: Multiple groups <30 samples
 
@@ -465,4 +456,4 @@ Google Solution Challenge 2026
 
 ---
 
-**Good luck with the Google Solution Challenge!** 🚀
+**Good luck with the Google Solution Challenge!** 

@@ -4,7 +4,7 @@ This guide provides a step-by-step walkthrough of FairSight Core's capabilities 
 
 ---
 
-## 🚀 Quick Start for Judges
+##  Quick Start for Judges
 
 ### Option 1: Local Development (Recommended for Full Experience)
 
@@ -33,7 +33,7 @@ docker-compose up -d
 
 ---
 
-## 📋 Demo Scenarios
+##  Demo Scenarios
 
 ### Scenario 1: Dataset Bias Analysis (Hiring Data)
 
@@ -125,7 +125,7 @@ docker-compose up -d
 
 ---
 
-## 🎯 Key Features to Highlight
+##  Key Features to Highlight
 
 ### 1. Automatic Column Inference
 - **What**: System automatically detects target and sensitive columns
@@ -159,7 +159,7 @@ docker-compose up -d
 
 ---
 
-## 🌟 Impact & Social Good
+##  Impact & Social Good
 
 ### Real-World Applications
 - **Hiring**: Ensure fair recruitment practices
@@ -176,4 +176,4 @@ docker-compose up -d
 
 ---
 
-**Together, we can ensure AI benefits everyone equally.** 🌍
+**Together, we can ensure AI benefits everyone equally.** 

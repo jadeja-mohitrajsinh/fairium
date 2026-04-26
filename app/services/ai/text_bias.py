@@ -1,10 +1,8 @@
-"""Text bias analysis service for detecting potential bias in text input."""
-
 import re
 from typing import Dict, List, Optional
 import joblib
 from pathlib import Path
-
+from app.core.logging import logger
 
 class TextBiasAnalyzer:
     """Analyzes text for potential bias, discrimination, or unfair patterns."""
@@ -110,7 +108,8 @@ class TextBiasAnalyzer:
         try:
             model_data = joblib.load(model_path)
             return model_data
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to load ML classifier: {e}")
             return None
     
     @classmethod
@@ -119,77 +118,40 @@ class TextBiasAnalyzer:
         try:
             classifier = model_data['classifier']
             vectorizer = model_data['vectorizer']
-            
-            # Transform text
             text_tfidf = vectorizer.transform([text])
-            
-            # Get probability of bias (class 1)
             proba = classifier.predict_proba(text_tfidf)[0]
             bias_probability = proba[1] if len(proba) > 1 else 0.0
-            
             return bias_probability
-        except Exception:
+        except Exception as e:
+            logger.error(f"ML prediction error: {e}")
             return None
     
     @classmethod
     def analyze_text(cls, text: str) -> Dict:
-        """
-        Analyze text for potential bias using hybrid approach (rule-based + ML).
-        
-        Args:
-            text: Input text to analyze
-            
-        Returns:
-            Dictionary with bias analysis results
-        """
+        """Analyze text for potential bias using hybrid approach (rule-based + ML)."""
+        logger.info("Analyzing text for potential bias")
         text_lower = text.lower()
         detected_biases = []
         has_ambiguous_bias = False
         
-        # Step 1: Rule-based detection
         for bias_type, patterns in cls.BIAS_PATTERNS.items():
-            # Check for keywords
-            keyword_matches = []
-            for keyword in patterns['keywords']:
-                if keyword in text_lower:
-                    keyword_matches.append(keyword)
+            keyword_matches = [kw for kw in patterns['keywords'] if kw in text_lower]
+            phrase_matches = [p for p in patterns.get('biased_phrases', []) if re.search(p, text_lower)]
+            ambiguous_matches = [p for p in patterns.get('ambiguous_phrases', []) if re.search(p, text_lower)]
             
-            # Check for biased phrases using regex
-            phrase_matches = []
-            if 'biased_phrases' in patterns:
-                for pattern in patterns['biased_phrases']:
-                    if re.search(pattern, text_lower):
-                        phrase_matches.append(pattern)
-            
-            # Check for ambiguous phrases (vague language that may indicate bias)
-            ambiguous_matches = []
-            if 'ambiguous_phrases' in patterns:
-                for pattern in patterns['ambiguous_phrases']:
-                    if re.search(pattern, text_lower):
-                        ambiguous_matches.append(pattern)
-                        has_ambiguous_bias = True
+            if ambiguous_matches:
+                has_ambiguous_bias = True
             
             if keyword_matches or phrase_matches or ambiguous_matches:
-                # Determine confidence based on number of matches
                 match_count = len(keyword_matches) + len(phrase_matches) + len(ambiguous_matches)
-                if match_count >= 3:
-                    confidence = 'High'
-                elif match_count >= 2:
-                    confidence = 'Medium'
-                else:
-                    confidence = 'Low'
+                confidence = 'High' if match_count >= 3 else 'Medium' if match_count >= 2 else 'Low'
                 
-                # Generate explanation
                 if ambiguous_matches:
-                    explanation = f"Detected {len(ambiguous_matches)} ambiguous phrase(s) that may unintentionally exclude individuals from diverse backgrounds related to {bias_type}."
+                    explanation = f"Detected {len(ambiguous_matches)} ambiguous phrase(s) related to {bias_type}."
                 else:
-                    explanation = f"Detected {len(keyword_matches)} bias-related keywords and {len(phrase_matches)} potentially biased phrases related to {bias_type}."
+                    explanation = f"Detected {len(keyword_matches)} keywords and {len(phrase_matches)} biased phrases related to {bias_type}."
                 
-                # Suggest neutral alternatives
-                alternatives = []
-                for biased, neutral in patterns['neutral_alternatives'].items():
-                    if biased in text_lower:
-                        alternatives.append(f"Replace '{biased}' with '{neutral}'")
+                alternatives = [f"Replace '{b}' with '{n}'" for b, n in patterns['neutral_alternatives'].items() if b in text_lower]
                 
                 detected_biases.append({
                     'type': bias_type,
@@ -201,30 +163,16 @@ class TextBiasAnalyzer:
                     'ambiguous_matches': ambiguous_matches,
                 })
         
-        # Step 2: ML-based detection (hybrid approach)
         ml_bias_probability = None
         model_data = cls._load_ml_classifier()
         if model_data:
             ml_bias_probability = cls._ml_predict(text, model_data)
         
-        # Step 3: Combine results
         if detected_biases:
-            # Get highest confidence from rule-based
             confidence_order = {'High': 0, 'Medium': 1, 'Low': 2}
             highest_confidence = min(detected_biases, key=lambda x: confidence_order[x['confidence']])
-            
-            # Determine if bias is definite or possible
             bias_status = 'Possible' if has_ambiguous_bias else 'Yes'
-            
-            # If ML predicts high bias probability but rules didn't catch it, elevate to Possible
-            if ml_bias_probability and ml_bias_probability > 0.7 and bias_status == 'No':
-                bias_status = 'Possible'
-                summary = f"ML model detected potential bias (confidence: {ml_bias_probability:.2f}). Rule-based analysis found no obvious patterns."
-            else:
-                summary = f"Detected {len(detected_biases)} type(s) of potential bias: {', '.join([b['type'] for b in detected_biases])}."
-                if ml_bias_probability:
-                    summary += f" ML confidence: {ml_bias_probability:.2f}"
-            
+            summary = f"Detected {len(detected_biases)} type(s) of potential bias."
             return {
                 'bias_detected': bias_status,
                 'biases': detected_biases,
@@ -233,14 +181,13 @@ class TextBiasAnalyzer:
                 'summary': summary
             }
         else:
-            # No rule-based bias detected, check ML
             if ml_bias_probability and ml_bias_probability > 0.6:
                 return {
                     'bias_detected': 'Possible',
                     'biases': [],
                     'overall_confidence': 'Medium',
                     'ml_confidence': ml_bias_probability,
-                    'summary': f"ML model detected potential bias (confidence: {ml_bias_probability:.2f}) but no obvious rule-based patterns found. Text may contain subtle or context-dependent bias."
+                    'summary': "ML model detected potential bias but no rule-based patterns found."
                 }
             else:
                 return {
@@ -248,5 +195,5 @@ class TextBiasAnalyzer:
                     'biases': [],
                     'overall_confidence': 'Low',
                     'ml_confidence': ml_bias_probability,
-                    'summary': 'No bias patterns detected by either rule-based analysis or ML model.'
+                    'summary': 'No bias patterns detected.'
                 }

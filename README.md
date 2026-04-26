@@ -8,7 +8,7 @@ FairSight Core is a comprehensive bias analysis and mitigation platform that hel
 
 ---
 
-## 🎯 Problem Statement
+##  Problem Statement
 
 AI systems increasingly make critical decisions affecting human lives. When trained on biased historical data, these systems perpetuate and amplify discrimination against protected groups. Organizations lack accessible tools to detect and mitigate algorithmic bias before deployment.
 
@@ -16,65 +16,9 @@ AI systems increasingly make critical decisions affecting human lives. When trai
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-### Feature Layer (Upgraded)
-
-#### Core Real-Time Features
-- Real-time bias monitoring
-- Bias drift detection
-- Threshold-based bias alerts
-
-#### Decision Control Layer
-- Pre-decision bias evaluation API
-- Bias blocking / flagging system
-- Fairness approval layer
-
-#### Automated Mitigation
-- Auto reweighting
-- Auto resampling
-- Threshold adjustment engine
-- Bias-corrected dataset/model output
-
-#### Simulation & Testing
-- Fairness vs accuracy simulation
-- Scenario-based decision testing (hiring, lending, etc.)
-- Mitigation impact preview
-
-#### Explainability
-- Human-readable bias explanations
-- Impacted group identification
-- Risk consequence narratives
-
-#### Compliance & Governance
-- Bias audit report generation
-- Fairness certification (non-legal)
-- Decision and mitigation tracking logs
-
-#### Advanced Bias Analysis
-- Intersectional bias detection
-- Risk heatmap visualization
-- Prioritization scoring
-
-#### Data Intelligence
-- Data quality analysis
-- Low sample size detection
-- Missing data bias detection
-- Skew detection
-- Pre-analysis correction suggestions
-
-#### Integration & API
-- `/analyze` endpoint
-- `/monitor` endpoint
-- `/gate` endpoint
-- External system integration support
-
-#### Decision Intelligence
-- Unified Bias Risk Score (0-100)
-- Multi-metric aggregation (DI, DP, confidence, impact)
-- Risk prioritization system
-
-### 🔍 Comprehensive Bias Detection
+###  Comprehensive Bias Detection
 - **Automatic column inference** - Intelligently detects target and sensitive columns from your data
 - **Fairness metrics** - Demographic Parity Difference, Disparate Impact Ratio, and more
 - **Severity classification** - LOW/MODERATE/HIGH risk levels with color-coded indicators
@@ -82,33 +26,33 @@ AI systems increasingly make critical decisions affecting human lives. When trai
 - **Proxy bias detection** - Identifies features that may indirectly encode sensitive attributes
 - **Text bias analysis** - Hybrid ML + rule-based detection of bias in text (job descriptions, policies, etc.)
 
-### 📊 Human-Readable Insights
+###  Human-Readable Insights
 - **Plain language explanations** - Clear, actionable descriptions of bias findings
 - **Sample size awareness** - Reliability markers based on group sample sizes
 - **Confidence scoring** - HIGH/MEDIUM/LOW confidence based on data quality
 - **Distribution context** - Avoids misleading conclusions with population trends
 - **Visual dashboards** - Interactive charts and graphs for intuitive understanding
 
-### 🛡️ Impact Assessment
+###  Impact Assessment
 - **Affected population estimation** - Quantifies how many individuals are disadvantaged
 - **Real-world impact** - Translates metrics into human impact
 - **Group-level analysis** - Detailed breakdown by demographic groups
 - **Compliance status** - COMPLIANT/MONITOR/REQUIRES_ACTION classification
 
-### 🔧 Bias Mitigation
+###  Bias Mitigation
 - **Data preprocessing recommendations** - Specific steps to reduce bias in training data
 - **Feature removal suggestions** - Identifies proxy features to remove or transform
 - **Reweighting strategies** - Sample weight calculations for balanced representation
 - **Before/after simulation** - Shows potential improvement with balanced outcomes
 - **Neutral alternatives** - Suggests fair language for text bias
 
-### 📋 Compliance & Reporting
+###  Compliance & Reporting
 - **Bias report summary** - Executive-level overview for compliance officers
 - **Professional audit format** - Clear, trustworthy reporting for stakeholders
 - **Export capabilities** - Generate reports for regulatory submissions
 - **Actionable recommendations** - Specific guidance per severity level
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### One-command start
 
@@ -151,16 +95,16 @@ npm run dev
 
 ```text
 fairsight/
-├── app/
-│   ├── api/
-│   ├── models/
-│   ├── services/
-│   └── main.py
-├── data/
-├── frontend/
-├── requirements.txt
-├── run_all.ps1
-└── stop_all.ps1
+ app/
+    api/
+    models/
+    services/
+    main.py
+ data/
+ frontend/
+ requirements.txt
+ run_all.ps1
+ stop_all.ps1
 ```
 
 ## Backend
@@ -208,7 +152,7 @@ Windows PowerShell:
 .\stop_all.ps1
 ```
 
-## 📖 Use Cases
+##  Use Cases
 
 ### Hiring & Recruitment
 Ensure your hiring algorithms don't discriminate based on gender, race, age, or other protected characteristics. FairSight helps you identify and mitigate bias before it affects real candidates.
@@ -222,7 +166,7 @@ Ensure medical AI systems provide equitable care across all patient populations.
 ### Criminal Justice & Risk Assessment
 Audit risk assessment tools for racial or socioeconomic bias. Ensure fair treatment across all communities.
 
-## 📚 API Documentation
+##  API Documentation
 
 ### `POST /analyze`
 
@@ -322,7 +266,7 @@ Upload a CSV file for comprehensive bias analysis.
 }
 ```
 
-## 🏗️ Architecture
+##  Architecture
 
 FairSight Core uses a modern, scalable architecture:
 
@@ -337,22 +281,22 @@ FairSight Core uses a modern, scalable architecture:
 
 ```
 Backend:
-├── FastAPI (Web Framework)
-├── Pydantic (Data Validation)
-├── Pandas (Data Processing)
-├── NumPy (Numerical Computing)
-├── Scikit-learn (ML for text bias)
-└── River (Online Learning)
+ FastAPI (Web Framework)
+ Pydantic (Data Validation)
+ Pandas (Data Processing)
+ NumPy (Numerical Computing)
+ Scikit-learn (ML for text bias)
+ River (Online Learning)
 
 Frontend:
-├── React 18 (UI Framework)
-├── Vite (Build Tool)
-├── React Router (Navigation)
-├── Recharts (Data Visualization)
-└── Modern CSS (Styling)
+ React 18 (UI Framework)
+ Vite (Build Tool)
+ React Router (Navigation)
+ Recharts (Data Visualization)
+ Modern CSS (Styling)
 ```
 
-## 🎨 User Interface
+##  User Interface
 
 FairSight Core features a modern, professional SaaS-style interface:
 
@@ -370,7 +314,7 @@ FairSight Core features a modern, professional SaaS-style interface:
 - **Collapsible sections** - Bias Drivers, Intersectional Bias, Impact Assessment, Recommendations
 - **Color-coded indicators** - Red (high risk), Yellow (moderate), Green (safe)
 
-## 📖 Use Cases
+##  Use Cases
 
 ### Hiring & Recruitment
 Ensure your hiring algorithms don't discriminate based on gender, race, age, or other protected characteristics. FairSight helps you identify and mitigate bias before it affects real candidates.
@@ -387,7 +331,7 @@ Audit risk assessment tools for racial or socioeconomic bias. Ensure fair treatm
 ### HR Policy Review
 Analyze job descriptions, company policies, and internal communications for subtle bias using our hybrid text analysis system.
 
-## 📚 API Documentation
+##  API Documentation
 
 ### `POST /analyze`
 Upload a CSV file for comprehensive bias analysis.
@@ -425,86 +369,6 @@ Analyze text for potential bias using hybrid ML + rule-based detection.
 }
 ```
 
-### `POST /monitor`
-Real-time monitoring endpoint for unified bias risk scoring, drift detection, and threshold alerts.
-
-**Request:**
-```json
-{
-  "analysis_payload": {
-    "detected_target": "hired",
-    "fairness_metrics": {
-      "gender": {
-        "dp_diff": 0.18,
-        "di_ratio": 0.62,
-        "confidence": "HIGH",
-        "group_rates": {"male": 0.78, "female": 0.60},
-        "simulation": {"improvement": "35%"}
-      }
-    },
-    "affected_population": {
-      "gender": {
-        "total_affected_individuals": 52,
-        "affected_groups": [{"group": "female", "disadvantaged_count": 52}]
-      }
-    },
-    "notes": ["5.2% missing values in sensitive columns"]
-  },
-  "historical_risk_scores": [44, 47, 52, 55],
-  "thresholds": {
-    "flag": 50,
-    "block": 75,
-    "drift_abs": 10,
-    "drift_pct": 20
-  },
-  "scenario": "hiring",
-  "external_metadata": {"model_version": "2026.04.1"}
-}
-```
-
-**Response:** includes `decision_intelligence.unified_bias_risk_score`, `drift`, `alerts`, `risk_heatmap`, `mitigation_preview`, and `tracking_log_id`.
-
-### `POST /gate`
-Pre-decision fairness gate endpoint with blocking/flagging logic and mitigation guidance.
-
-**Request:**
-```json
-{
-  "decision_id": "loan-application-10042",
-  "scenario": "lending",
-  "decision_payload": {
-    "applicant_id": "A-901",
-    "recommended_outcome": "approve"
-  },
-  "analysis_payload": {
-    "detected_target": "approved",
-    "fairness_metrics": {
-      "race": {
-        "dp_diff": 0.21,
-        "di_ratio": 0.59,
-        "confidence": "MEDIUM",
-        "group_rates": {"group_a": 0.72, "group_b": 0.51},
-        "simulation": {"improvement": "40%"},
-        "explanation": "Group B receives markedly fewer positive outcomes."
-      }
-    },
-    "affected_population": {
-      "race": {
-        "total_affected_individuals": 88,
-        "affected_groups": [{"group": "group_b", "disadvantaged_count": 88}]
-      }
-    },
-    "notes": ["Distribution skew detected in applicant history"]
-  },
-  "block_threshold": 75,
-  "flag_threshold": 50,
-  "auto_mitigation": true,
-  "external_metadata": {"channel": "api-gateway"}
-}
-```
-
-**Response:** includes `status` (`APPROVED`/`FLAGGED`/`BLOCKED`), `fairness_approval_required`, `mitigation_actions`, `fairness_certificate`, and `tracking_log_id`.
-
 ### `GET /health`
 Health check endpoint.
 
@@ -518,7 +382,7 @@ Health check endpoint.
 ### Interactive API Docs
 Swagger UI available at: `http://127.0.0.1:8001/docs`
 
-## 🚀 Deployment
+##  Deployment
 
 ### Docker Deployment (Recommended)
 
@@ -545,7 +409,7 @@ npm run build
 # Serve the dist/ folder with any web server
 ```
 
-## 🧪 Testing
+##  Testing
 
 Run the test suite:
 
@@ -558,7 +422,7 @@ cd frontend
 npm test
 ```
 
-## 📊 Sample Datasets
+##  Sample Datasets
 
 The `data/` directory contains sample datasets for testing:
 
@@ -566,27 +430,27 @@ The `data/` directory contains sample datasets for testing:
 - `compas-scores-raw.csv` - Criminal justice risk assessment data
 - `german_credit_data.csv` - Credit scoring dataset
 
-## 🎓 How It Works
+##  How It Works
 
 ### Dataset Bias Analysis Pipeline
 
-1. **Upload CSV** → User uploads dataset via drag-and-drop
-2. **Column Inference** → System auto-detects target and sensitive columns
-3. **Fairness Metrics** → Calculates DP, DI, and other metrics per attribute
-4. **Bias Detection** → Identifies bias drivers, proxy features, intersectional bias
-5. **Impact Assessment** → Quantifies affected population
-6. **Mitigation Recommendations** → Suggests preprocessing steps and feature removals
-7. **Simulation** → Shows potential improvement with balanced outcomes
+1. **Upload CSV** -> User uploads dataset via drag-and-drop
+2. **Column Inference** -> System auto-detects target and sensitive columns
+3. **Fairness Metrics** -> Calculates DP, DI, and other metrics per attribute
+4. **Bias Detection** -> Identifies bias drivers, proxy features, intersectional bias
+5. **Impact Assessment** -> Quantifies affected population
+6. **Mitigation Recommendations** -> Suggests preprocessing steps and feature removals
+7. **Simulation** -> Shows potential improvement with balanced outcomes
 
 ### Text Bias Analysis Pipeline
 
-1. **Text Input** → User enters text (job description, policy, etc.)
-2. **Rule-Based Detection** → Matches against bias patterns (gender, race, age, location, cultural)
-3. **ML Classification** → Logistic Regression classifier predicts bias probability
-4. **Hybrid Scoring** → Combines rule-based and ML results for final assessment
-5. **Neutral Alternatives** → Suggests fair language replacements
+1. **Text Input** -> User enters text (job description, policy, etc.)
+2. **Rule-Based Detection** -> Matches against bias patterns (gender, race, age, location, cultural)
+3. **ML Classification** -> Logistic Regression classifier predicts bias probability
+4. **Hybrid Scoring** -> Combines rule-based and ML results for final assessment
+5. **Neutral Alternatives** -> Suggests fair language replacements
 
-## 🏆 Competitive Advantages
+##  Competitive Advantages
 
 ### 1. Accessibility
 - **No-code interface** - Non-technical users can detect bias without ML expertise
@@ -608,7 +472,7 @@ The `data/` directory contains sample datasets for testing:
 - **Scalable architecture** - FastAPI + React for performance
 - **Docker deployment** - Easy containerization and cloud deployment
 
-## 🌟 Impact & Social Good
+##  Impact & Social Good
 
 By providing accessible bias detection and mitigation tools, FairSight Core helps:
 
@@ -626,7 +490,7 @@ By providing accessible bias detection and mitigation tools, FairSight Core help
 - **SDG 10**: Reduced Inequalities
 - **SDG 16**: Peace, Justice, and Strong Institutions
 
-## 🤝 Contributing
+##  Contributing
 
 FairSight Core is open source and welcomes contributions. Areas for improvement:
 - Additional fairness metrics (Equal Opportunity, Equalized Odds)
@@ -637,11 +501,11 @@ FairSight Core is open source and welcomes contributions. Areas for improvement:
 - Real-time collaboration features
 - Advanced visualization options
 
-## 📄 License
+##  License
 
 This project is part of the Google Solution Challenge 2026.
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - Google Solution Challenge 2026 for the inspiration
 - Fairness research community for foundational metrics
@@ -649,4 +513,4 @@ This project is part of the Google Solution Challenge 2026.
 
 ---
 
-**Together, we can ensure AI benefits everyone equally.** 🌍
+**Together, we can ensure AI benefits everyone equally.** 

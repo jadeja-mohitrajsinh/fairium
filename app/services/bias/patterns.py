@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
-from app.services.metrics import encode_positive_mask
+from app.services.bias.metrics import encode_positive_mask
 
 
 def _prepare_feature_matrix(dataframe: pd.DataFrame, target_column: str) -> pd.DataFrame:

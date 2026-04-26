@@ -96,24 +96,24 @@ FairSight Core addresses these challenges through a **decision-support approach*
 ### System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend (React)                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ File Upload  │  │  Dashboard   │  │  Report View │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ HTTP/REST API
-┌──────────────────────────────▼──────────────────────────────┐
-│                      Backend (FastAPI)                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │   Routes     │  │   Services   │  │    Models    │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                      │         │         │                  │
-│  ┌───────────────────▼─────────▼─────────▼──────────────┐ │
-│  │              Analysis Pipeline                          │ │
-│  │  • Inference → Metrics → Insights → Mitigation          │ │
-│  └──────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+
+                        Frontend (React)                     
+           
+   File Upload      Dashboard       Report View      
+           
+
+                                HTTP/REST API
+
+                      Backend (FastAPI)                      
+           
+     Routes          Services         Models         
+           
+                                                          
+   
+                Analysis Pipeline                           
+    * Inference -> Metrics -> Insights -> Mitigation           
+   
+
 ```
 
 ### Core Services
@@ -491,7 +491,7 @@ The platform is designed for real-world use:
 
 As AI continues to make increasingly consequential decisions, tools like FairSight Core become essential for ensuring that these systems benefit everyone equally, regardless of demographic characteristics.
 
-FairSight Core is not just a technical solution—it's a commitment to building fairer, more equitable AI systems that serve humanity's best interests.
+FairSight Core is not just a technical solution--it's a commitment to building fairer, more equitable AI systems that serve humanity's best interests.
 
 ---
 
@@ -518,7 +518,7 @@ FairSight Core is not just a technical solution—it's a commitment to building 
 
 ### C. Confidence Scoring
 
-- **HIGH**: All groups have ≥30 samples, balanced distribution
+- **HIGH**: All groups have >=30 samples, balanced distribution
 - **MEDIUM**: Some groups have <30 samples or moderate imbalance
 - **LOW**: Multiple groups have <30 samples or severe imbalance
 

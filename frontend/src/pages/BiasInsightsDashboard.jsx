@@ -1,126 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
-import { gateDecision, monitorBias } from "../api";
+import FairnessCard from "../components/FairnessCard";
+import MitigationModal from "../components/MitigationModal";
+import ExecutiveSummary from "../components/ExecutiveSummary";
+import PriorityActions from "../components/PriorityActions";
+import TextAnalysisResult from "../components/TextAnalysisResult";
 
 export default function BiasInsightsDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { result, type, originalFile } = location.state || {};
+  const { result, type } = location.state || {};
   const [expandedSections, setExpandedSections] = useState({});
   const [showMitigationModal, setShowMitigationModal] = useState(false);
   const [tradeoffLevel, setTradeoffLevel] = useState(0);
-  const [monitorResult, setMonitorResult] = useState(null);
-  const [gateResult, setGateResult] = useState(null);
-  const [decisionLoading, setDecisionLoading] = useState(false);
-  const [decisionError, setDecisionError] = useState("");
-  const [mitigating, setMitigating] = useState(false);
-  const [mitigationResults, setMitigationResults] = useState(null);
-
-  const safeType = String(type || "").toLowerCase();
-
-  useEffect(() => {
-    if (safeType !== "dataset" || !result?.fairness_metrics) {
-      return;
-    }
-
-    let active = true;
-
-    const runDecisionFlow = async () => {
-      setDecisionLoading(true);
-      setDecisionError("");
-
-      try {
-        const historyRaw = localStorage.getItem("fairsight-risk-history");
-        const historicalRiskScores = historyRaw ? JSON.parse(historyRaw) : [];
-
-        const monitorPayload = {
-          analysisPayload: result,
-          historicalRiskScores,
-          thresholds: {
-            block: 75,
-            flag: 50,
-            drift_abs: 10,
-            drift_pct: 20,
-          },
-          scenario: "general",
-          externalMetadata: {
-            source: "dashboard",
-          },
-        };
-
-        const monitored = await monitorBias(monitorPayload);
-        if (!active) {
-          return;
-        }
-
-        setMonitorResult(monitored);
-
-        const nextHistory = [
-          ...historicalRiskScores.slice(-19),
-          monitored.decision_intelligence.unified_bias_risk_score,
-        ];
-        localStorage.setItem("fairsight-risk-history", JSON.stringify(nextHistory));
-
-        const gated = await gateDecision({
-          decisionId: `decision-${Date.now()}`,
-          scenario: "general",
-          decisionPayload: {
-            detected_target: result.detected_target,
-            compliance_status: result.bias_report_summary?.compliance_status,
-          },
-          analysisPayload: result,
-          blockThreshold: 75,
-          flagThreshold: 50,
-          autoMitigation: true,
-          externalMetadata: {
-            source: "dashboard",
-          },
-        });
-
-        if (!active) {
-          return;
-        }
-
-        setGateResult(gated);
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-        setDecisionError(error?.message || "Failed to load monitor/gate insights.");
-      } finally {
-        if (active) {
-          setDecisionLoading(false);
-        }
-      }
-    };
-
-    runDecisionFlow();
-
-    return () => {
-      active = false;
-    };
-  }, [result, safeType]);
-
-  const driftTrendData = useMemo(() => {
-    if (!monitorResult?.drift) {
-      return [];
-    }
-
-    const baseline = Number(monitorResult.drift.baseline_score || 0);
-    const current = Number(monitorResult.drift.current_score || 0);
-
-    return [
-      { label: "Baseline", score: baseline },
-      { label: "Current", score: current },
-    ];
-  }, [monitorResult]);
-
-  const heatmapData = useMemo(() => {
-    return monitorResult?.risk_heatmap || [];
-  }, [monitorResult]);
-
-  const gateStatusClass = String(gateResult?.status || "").toLowerCase();
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -148,71 +41,18 @@ export default function BiasInsightsDashboard() {
       <div className="dashboard animate-fadeIn">
         <header className="dashboardHeader animate-slideUp">
           <button className="backButton" onClick={() => navigate("/")}>
-            ← Back to Workspace
+            Back to Workspace
           </button>
           <div>
             <p className="eyebrow">Text Bias Analysis</p>
             <h1>Bias Insights</h1>
           </div>
         </header>
-
-        <div className="dashboardContent">
-          <div className="summaryBanner animate-slideUp delay-1">
-            <div className="summaryItem">
-              <span className="summaryLabel">Bias Status</span>
-              <span className={`summaryValue status-${result.bias_detected.toLowerCase()}`}>
-                {result.bias_detected}
-              </span>
-            </div>
-            <div className="summaryItem">
-              <span className="summaryLabel">Confidence</span>
-              <span className="summaryValue">{result.overall_confidence}</span>
-            </div>
-            {result.ml_confidence && (
-              <div className="summaryItem">
-                <span className="summaryLabel">ML Confidence</span>
-                <span className="summaryValue">{(result.ml_confidence * 100).toFixed(1)}%</span>
-              </div>
-            )}
-          </div>
-
-          <div className="insightCard animate-slideUp delay-2">
-            <h3>Summary</h3>
-            <p>{result.summary}</p>
-          </div>
-
-          {result.biases.length > 0 && (
-            <div className="insightCard animate-slideUp delay-3">
-              <h3>Detailed Bias Analysis</h3>
-              {result.biases.map((bias, idx) => (
-                <div key={idx} className="biasDetail">
-                  <div className="biasDetailHeader">
-                    <strong>{bias.type.charAt(0).toUpperCase() + bias.type.slice(1)} Bias</strong>
-                    <span className={`confidenceBadge confidence-${bias.confidence.toLowerCase()}`}>
-                      {bias.confidence} Confidence
-                    </span>
-                  </div>
-                  <p className="biasExplanation">{bias.explanation}</p>
-                  {bias.alternatives.length > 0 && (
-                    <div className="biasAlternatives">
-                      <strong>Suggested alternatives:</strong>
-                      <ul>
-                        {bias.alternatives.map((alt, altIdx) => (
-                          <li key={altIdx}>{alt}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <TextAnalysisResult result={result} />
       </div>
     );
   }
 
-  // Dataset bias dashboard
   const riskLevel = result.bias_report_summary.overall_risk_level;
   const fairnessMetrics = result.fairness_metrics;
 
@@ -220,191 +60,29 @@ export default function BiasInsightsDashboard() {
     <div className="dashboard animate-fadeIn">
       <header className="dashboardHeader animate-slideUp">
         <button className="backButton" onClick={() => navigate("/")}>
-          ← Back to Workspace
+          Back to Workspace
         </button>
         <div>
           <p className="eyebrow">Dataset Bias Analysis</p>
           <h1>Bias Insights Dashboard</h1>
         </div>
         <button className="primaryButton" onClick={() => setShowMitigationModal(true)} style={{marginLeft: 'auto'}}>
-          ✨ Debias Dataset
+          Debias Dataset
         </button>
-
-        {mitigationResults && (
-          <div style={{marginLeft: '20px', padding: '10px 15px', background: mitigationResults.warnings?.length > 0 ? '#fef3c7' : '#f0fdf4', border: mitigationResults.warnings?.length > 0 ? '1px solid #f59e0b' : '1px solid #86efac', borderRadius: '4px', fontSize: '14px'}}>
-            <strong>Method:</strong> {mitigationResults.method_used}<br/>
-            <strong>Status:</strong> <span style={{color: mitigationResults.status === 'APPROVED' ? '#16a34a' : mitigationResults.status === 'FLAGGED' ? '#d97706' : '#dc2626'}}>{mitigationResults.status}</span><br/>
-            <strong>Risk Score:</strong> {mitigationResults.risk_score}/100 | <strong>Confidence:</strong> {mitigationResults.confidence}<br/>
-            <strong>DI improved:</strong> <span style={{color: mitigationResults.improvement.di_improvement > 0 ? '#16a34a' : mitigationResults.improvement.di_improvement < 0 ? '#dc2626' : '#666'}}>{mitigationResults.improvement.di_improvement > 0 ? '+' : ''}{mitigationResults.improvement.di_improvement.toFixed(3)}</span><br/>
-            <strong>DP reduced:</strong> <span style={{color: mitigationResults.improvement.dp_reduction > 0 ? '#16a34a' : mitigationResults.improvement.dp_reduction < 0 ? '#dc2626' : '#666'}}>{mitigationResults.improvement.dp_reduction > 0 ? '+' : ''}{mitigationResults.improvement.dp_reduction.toFixed(3)}</span>
-            {mitigationResults.warnings && mitigationResults.warnings.length > 0 && (
-              <div style={{marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.1)'}}>
-                {mitigationResults.warnings.map((warning, idx) => (
-                  <div key={idx} style={{color: '#92400e', fontSize: '12px'}}>⚠️ {warning}</div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </header>
 
       <div className="dashboardContent">
-        {/* Executive Summary */}
-        <div className="insightCard animate-slideUp delay-1">
-          <h3>Real-Time Monitor & Decision Gate</h3>
-          <p className="cardDescription">
-            Unified bias risk monitoring, drift detection, and pre-decision fairness gate results.
-          </p>
+        <ExecutiveSummary report={result.structured_bias_report} />
+        
+        <PriorityActions recommendations={result.structured_bias_report?.recommendations} />
 
-          {decisionLoading && <p className="decisionHint">Running monitor and gate checks...</p>}
-          {decisionError && <div className="errorBox">{decisionError}</div>}
-
-          {monitorResult && (
-            <div className="monitorGrid">
-              <div className="monitorCard">
-                <span className="monitorLabel">Unified Bias Risk Score</span>
-                <strong className="monitorScore">{monitorResult.decision_intelligence.unified_bias_risk_score}/100</strong>
-                <span className="monitorSubtle">Alerts: {monitorResult.alerts.length}</span>
-              </div>
-
-              <div className="monitorCard">
-                <span className="monitorLabel">Drift Status</span>
-                <strong className={`monitorScore ${monitorResult.drift.detected ? "monitorScore-warn" : "monitorScore-ok"}`}>
-                  {monitorResult.drift.detected ? "Detected" : "Stable"}
-                </strong>
-                <span className="monitorSubtle">Delta: {monitorResult.drift.delta}</span>
-              </div>
-
-              {gateResult && (
-                <div className={`monitorCard monitorCard-gate gate-${gateStatusClass}`}>
-                  <span className="monitorLabel">Gate Decision</span>
-                  <strong className="monitorScore">{gateResult.status}</strong>
-                  <span className="monitorSubtle">Fairness approval required: {gateResult.fairness_approval_required ? "Yes" : "No"}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {heatmapData.length > 0 && (
-            <div className="chartContainer" style={{ height: "260px", marginTop: "18px" }}>
-              <h4>Risk Heatmap</h4>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={heatmapData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="attribute" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Bar dataKey="score" fill="#111111" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {driftTrendData.length > 0 && (
-            <div className="chartContainer" style={{ height: "220px", marginTop: "12px" }}>
-              <h4>Drift Trend</h4>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={driftTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="label" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="score" stroke="#111111" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {gateResult && (
-            <div className="gateDecisionPanel">
-              <h4>Gate Decision Details</h4>
-              <p className="gateReason">{gateResult.reasons?.[0] || "No reason provided."}</p>
-              {gateResult.mitigation_actions?.length > 0 && (
-                <div className="gateActions">
-                  <strong>Recommended Mitigation Actions</strong>
-                  <ul>
-                    {gateResult.mitigation_actions.map((action, index) => (
-                      <li key={index}>{action}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {result.structured_bias_report && result.structured_bias_report.overall_summary && (
-          <div className="executiveSummaryCard animate-slideUp delay-1">
-            <div className="executiveHeader">
-              <h3>📋 Executive Summary</h3>
-              <span className={`decisionLabel decision-${result.bias_report_summary.compliance_status.toLowerCase()}`}>
-                {result.bias_report_summary.compliance_status === "REQUIRES_ACTION" ? "🚨 Action Required" :
-                 result.bias_report_summary.compliance_status === "MONITOR" ? "⚠️ Monitor" : "✅ Safe"}
-              </span>
-            </div>
-            <p className="executiveText">{result.structured_bias_report.overall_summary.executive_summary}</p>
-            
-            {/* Recommended Decision Box */}
-            {result.structured_bias_report.overall_summary.recommended_decision && (
-              <div className="decisionBox">
-                <strong>Recommended Decision:</strong>
-                <p>{result.structured_bias_report.overall_summary.recommended_decision}</p>
-              </div>
-            )}
-            
-            {/* Reliability Warning */}
-            {result.structured_bias_report.overall_summary.reliability_warning && (
-              <div className="reliabilityWarning">
-                {result.structured_bias_report.overall_summary.reliability_warning}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Priority Actions - What to do next */}
-        {result.structured_bias_report && result.structured_bias_report.recommendations && (
-          <div className="priorityActionsCard animate-slideUp delay-1">
-            <h3>🎯 Priority Actions - What to Do Next</h3>
-            {result.structured_bias_report.recommendations.urgent_actions && result.structured_bias_report.recommendations.urgent_actions.length > 0 ? (
-              <div className="priorityAction urgent">
-                <div className="priorityHeader">
-                  <span className="priorityIcon">🔴</span>
-                  <strong>{result.structured_bias_report.recommendations.urgent_actions[0].action}</strong>
-                </div>
-                <p>{result.structured_bias_report.recommendations.urgent_actions[0].reason}</p>
-                <span className="priorityTimeline">⏱️ {result.structured_bias_report.recommendations.urgent_actions[0].timeline}</span>
-              </div>
-            ) : result.structured_bias_report.recommendations.monitor_actions && result.structured_bias_report.recommendations.monitor_actions.length > 0 ? (
-              <div className="priorityAction monitor">
-                <div className="priorityHeader">
-                  <span className="priorityIcon">🟡</span>
-                  <strong>{result.structured_bias_report.recommendations.monitor_actions[0].action}</strong>
-                </div>
-                <p>{result.structured_bias_report.recommendations.monitor_actions[0].reason}</p>
-                <span className="priorityTimeline">⏱️ {result.structured_bias_report.recommendations.monitor_actions[0].timeline}</span>
-              </div>
-            ) : (
-              <div className="priorityAction safe">
-                <div className="priorityHeader">
-                  <span className="priorityIcon">🟢</span>
-                  <strong>No immediate action required</strong>
-                </div>
-                <p>Continue regular monitoring and bias audits.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Explainable AI & Proxy Detection */}
+        {/* SHAP Chart */}
         {result.shap_importance && result.shap_importance.length > 0 && (
           <div className="insightCard animate-slideUp delay-2">
-            <h3>🧠 Explainable AI (SHAP) & Proxy Detection</h3>
-            <p className="cardDescription">
-              True feature importance calculated using SHAP values. Features highly correlated with sensitive attributes are flagged as potential proxies.
-            </p>
+            <h3>Explainable AI (SHAP) & Proxy Detection</h3>
             <div className="chartContainer" style={{ height: "300px" }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={result.shap_importance} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={result.shap_importance} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                   <XAxis type="number" />
                   <YAxis dataKey="feature" type="category" width={120} />
@@ -413,14 +91,12 @@ export default function BiasInsightsDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            
-            {/* Proxy warnings */}
             {result.proxy_features && result.proxy_features.length > 0 && (
               <div className="proxyWarnings" style={{marginTop: '20px'}}>
-                <h4>⚠️ Proxy Feature Warnings</h4>
+                <h4>Proxy Feature Warnings</h4>
                 {result.proxy_features.map((proxy, idx) => (
                   <div key={idx} className="priorityAction urgent" style={{padding: '10px', marginTop: '10px'}}>
-                    <strong>{proxy.feature}</strong> acts as a proxy for <strong>{proxy.sensitive_column}</strong> (Correlation: {proxy.correlation.toFixed(2)})
+                    <strong>{proxy.feature}</strong> acts as a proxy for <strong>{proxy.sensitive_column}</strong>
                   </div>
                 ))}
               </div>
@@ -428,6 +104,7 @@ export default function BiasInsightsDashboard() {
           </div>
         )}
 
+        {/* Summary Banner */}
         <div className={`summaryBanner risk-${riskLevel.toLowerCase()} animate-slideUp delay-2`}>
           <div className="summaryItem">
             <span className="summaryLabel">Risk Level</span>
@@ -441,148 +118,20 @@ export default function BiasInsightsDashboard() {
             <span className="summaryLabel">Sensitive Attributes</span>
             <span className="summaryValue">{result.bias_report_summary.total_sensitive_attributes_analyzed}</span>
           </div>
-          <div className="summaryItem">
-            <span className="summaryLabel">Compliance Status</span>
-            <span className="summaryValue">{result.bias_report_summary.compliance_status}</span>
-          </div>
         </div>
 
+        {/* Fairness Cards Grid */}
         <div className="metricsGrid animate-slideUp delay-3">
-          {Object.entries(fairnessMetrics).map(([column, metric]) => {
-            const fairnessScore = Math.round(metric.di_ratio * 100);
-            const getScoreColor = (score) => {
-              if (score >= 80) return '#10B981';
-              if (score >= 50) return '#F59E0B';
-              return '#EF4444';
-            };
-            
-            const getTopGroups = () => {
-              if (!metric.group_rates) return [];
-              return Object.entries(metric.group_rates)
-                .map(([group, rate]) => ({ group, rate: rate * 100 }))
-                .sort((a, b) => b.rate - a.rate)
-                .slice(0, 3);
-            };
-            
-            const getLowestGroup = () => {
-              if (!metric.group_rates) return null;
-              const sorted = Object.entries(metric.group_rates)
-                .map(([group, rate]) => ({ group, rate: rate * 100 }))
-                .sort((a, b) => a.rate - b.rate);
-              return sorted[0];
-            };
-            
-            const topGroups = getTopGroups();
-            const lowestGroup = getLowestGroup();
-            const isLowConfidence = metric.confidence === 'LOW';
-            const isHighRisk = metric.severity === 'HIGH';
-
-            const getInsight = (severity, score) => {
-              if (severity === 'HIGH' && score < 20) {
-                return "Severe disparity caused by near-zero outcomes in some groups";
-              } else if (severity === 'HIGH') {
-                return "Significant imbalance across categories affecting fairness";
-              } else if (severity === 'MODERATE') {
-                return "Moderate disparity requiring monitoring and validation";
-              } else {
-                return "Fair outcomes across groups with minimal disparity";
-              }
-            };
-
-            const truncateText = (text, maxLength = 80) => {
-              if (text.length <= maxLength) return text;
-              return text.substring(0, maxLength).trim() + '...';
-            };
-
-            return (
-              <div key={column} className={`fairnessCard ${isHighRisk ? 'high-risk-card' : ''} ${isLowConfidence ? 'low-confidence-card' : ''}`}>
-                <div className="fairnessCardHeader">
-                  <h3>{column}</h3>
-                  <span className={`riskBadge risk-${metric.severity.toLowerCase()}`}>
-                    {metric.severity}
-                  </span>
-                </div>
-                
-                {isLowConfidence && (
-                  <div className="confidenceWarning">
-                    <span className="warningIcon">⚠️</span>
-                    <span>Low confidence due to small sample size</span>
-                  </div>
-                )}
-                
-                <div className="fairnessScoreContainer">
-                  <div className="circularProgress">
-                    <svg viewBox="0 0 36 36" className="circularChart">
-                      <path
-                        className="circle-bg"
-                        d="M18 2.0845
-                           a 15.9155 15.9155 0 0 1 0 31.831
-                           a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className={`circle ${isLowConfidence ? 'faded' : ''}`}
-                        stroke={getScoreColor(fairnessScore)}
-                        strokeDasharray={`${fairnessScore}, 100`}
-                        d="M18 2.0845
-                           a 15.9155 15.9155 0 0 1 0 31.831
-                           a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <text x="18" y="20.35" className="percentage">
-                        {fairnessScore}%
-                      </text>
-                    </svg>
-                  </div>
-                  <div className="fairnessScoreLabel">
-                    <span>Fairness Score (DI Ratio)</span>
-                    <span className="scoreLabel">{metric.di_ratio.toFixed(3)}</span>
-                  </div>
-                </div>
-
-                <div className="quickStats">
-                  <div className="quickStat">
-                    <span className="statLabel">DP Diff</span>
-                    <span className="statValue">{(metric.dp_diff * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="quickStat">
-                    <span className="statLabel">Confidence</span>
-                    <span className="statValue">{metric.confidence}</span>
-                  </div>
-                </div>
-
-                {topGroups.length > 0 && (
-                  <div className="topGroupsList">
-                    <span className="topGroupsLabel">Group Outcome Comparison</span>
-                    {topGroups.map((group, idx) => (
-                      <div key={idx} className="topGroupItem">
-                        <span className="groupName">{group.group}</span>
-                        <span className="groupRate">{group.rate.toFixed(1)}%</span>
-                      </div>
-                    ))}
-                    {lowestGroup && lowestGroup.rate < 50 && (
-                      <div className="topGroupItem lowest-group">
-                        <span className="groupName">{lowestGroup.group}</span>
-                        <span className="groupRate low-rate">{lowestGroup.rate.toFixed(1)}%</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="fairnessInsight">
-                  <p>{getInsight(metric.severity, fairnessScore)}</p>
-                </div>
-
-                <div className="fairnessExplanation">
-                  <p>{truncateText(metric.explanation)}</p>
-                </div>
-              </div>
-            );
-          })}
+          {Object.entries(fairnessMetrics).map(([column, metric]) => (
+            <FairnessCard key={column} column={column} metric={metric} />
+          ))}
         </div>
 
+        {/* Expandable Sections */}
         <div className="insightCard animate-slideUp delay-3">
           <div className="cardHeader" onClick={() => toggleSection("drivers")}>
             <h3>Bias Drivers</h3>
-            <span className="toggleIcon">{expandedSections.drivers ? "▼" : "▶"}</span>
+            <span className="toggleIcon">{expandedSections.drivers ? "v" : ">"}</span>
           </div>
           {expandedSections.drivers && (
             <div className="cardContent">
@@ -595,419 +144,14 @@ export default function BiasInsightsDashboard() {
             </div>
           )}
         </div>
-
-        {result.intersectional_bias && result.intersectional_bias.length > 0 && (
-          <div className="insightCard animate-slideUp delay-3">
-            <div className="cardHeader" onClick={() => toggleSection("intersectional")}>
-              <h3>Intersectional Bias</h3>
-              <span className="toggleIcon">{expandedSections.intersectional ? "▼" : "▶"}</span>
-            </div>
-            {expandedSections.intersectional && (
-              <div className="cardContent">
-                <p className="intersectionalSummary">
-                  {result.intersectional_bias.length > 3 
-                    ? "Certain attribute combinations show consistently low outcomes across intersectional groups."
-                    : "Intersectional analysis reveals disparities in specific attribute combinations."
-                  }
-                </p>
-                {result.intersectional_bias.slice(0, 3).map((bias, idx) => (
-                  <div key={idx} className="intersectionalItem">
-                    <strong>{bias.group}</strong>
-                    <p>Selection Rate: {(bias.selection_rate * 100).toFixed(1)}%</p>
-                    <p>Risk Level: {bias.risk_level}</p>
-                  </div>
-                ))}
-                {result.intersectional_bias.length > 3 && (
-                  <button 
-                    className="viewAllButton"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const element = e.target.closest('.cardContent');
-                      element.classList.toggle('showAll');
-                    }}
-                  >
-                    View all ({result.intersectional_bias.length} combinations)
-                  </button>
-                )}
-                {result.intersectional_bias.length > 3 && (
-                  <div className="remainingGroups">
-                    {result.intersectional_bias.slice(3).map((bias, idx) => (
-                      <div key={idx + 3} className="intersectionalItem">
-                        <strong>{bias.group}</strong>
-                        <p>Selection Rate: {(bias.selection_rate * 100).toFixed(1)}%</p>
-                        <p>Risk Level: {bias.risk_level}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="insightCard animate-slideUp delay-3">
-          <div className="cardHeader" onClick={() => toggleSection("impact")}>
-            <h3>Impact Assessment</h3>
-            <span className="toggleIcon">{expandedSections.impact ? "▼" : "▶"}</span>
-          </div>
-          {expandedSections.impact && (
-            <div className="cardContent">
-              {Object.entries(result.affected_population).map(([attribute, impact]) => {
-                const totalAffected = typeof impact.total_affected_individuals === 'number' 
-                  ? impact.total_affected_individuals 
-                  : parseInt(impact.total_affected_individuals) || 0;
-                
-                // Filter out zero-value groups and sort by count
-                const filteredGroups = impact.affected_groups
-                  ?.filter(g => g.disadvantaged_count > 0)
-                  .sort((a, b) => b.disadvantaged_count - a.disadvantaged_count) || [];
-                
-                const topGroups = filteredGroups.slice(0, 3);
-                const remainingGroups = filteredGroups.slice(3);
-                
-                return (
-                  <div key={attribute} className="impactItem">
-                    <div className="impactHeader">
-                      <strong>{attribute}</strong>
-                      <span className="impactTotal">{totalAffected.toLocaleString()} affected</span>
-                    </div>
-                    {topGroups.length > 0 && (
-                      <div className="affectedGroups">
-                        <strong>Top impacted groups:</strong>
-                        {topGroups.map((group, idx) => (
-                          <div key={idx} className="affectedGroup">
-                            <span>{group.group}</span>
-                            <span className="groupCount">{group.disadvantaged_count.toLocaleString()}</span>
-                          </div>
-                        ))}
-                        {remainingGroups.length > 0 && (
-                          <button 
-                            className="viewAllButton"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Toggle view all for this attribute
-                              const element = e.target.closest('.impactItem');
-                              element.classList.toggle('showAll');
-                            }}
-                          >
-                            {remainingGroups.length > 0 ? `View all (${filteredGroups.length} groups)` : ''}
-                          </button>
-                        )}
-                        {remainingGroups.length > 0 && (
-                          <div className="remainingGroups">
-                            {remainingGroups.map((group, idx) => (
-                              <div key={idx} className="affectedGroup">
-                                <span>{group.group}</span>
-                                <span className="groupCount">{group.disadvantaged_count.toLocaleString()}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="insightCard animate-slideUp delay-3">
-          <div className="cardHeader" onClick={() => toggleSection("recommendations")}>
-            <h3>Recommendations</h3>
-            <span className="toggleIcon">{expandedSections.recommendations ? "▼" : "▶"}</span>
-          </div>
-          {expandedSections.recommendations && (
-            <div className="cardContent">
-              {result.structured_bias_report && result.structured_bias_report.recommendations ? (
-                <>
-                  {result.structured_bias_report.recommendations.urgent_actions && result.structured_bias_report.recommendations.urgent_actions.length > 0 && (
-                    <div className="recommendationSection">
-                      <h4>🔴 Urgent Actions</h4>
-                      {result.structured_bias_report.recommendations.urgent_actions.map((rec, idx) => (
-                        <div key={idx} className="recommendationItem urgent">
-                          <div className="recHeader">
-                            <strong>{rec.action}</strong>
-                            <span className="recTimeline">{rec.timeline}</span>
-                          </div>
-                          <p>{rec.reason}</p>
-                          <span className="recPriority">Priority: {rec.priority}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {result.structured_bias_report.recommendations.monitor_actions && result.structured_bias_report.recommendations.monitor_actions.length > 0 && (
-                    <div className="recommendationSection">
-                      <h4>🟡 Monitor</h4>
-                      {result.structured_bias_report.recommendations.monitor_actions.map((rec, idx) => (
-                        <div key={idx} className="recommendationItem monitor">
-                          <div className="recHeader">
-                            <strong>{rec.action}</strong>
-                            <span className="recTimeline">{rec.timeline}</span>
-                          </div>
-                          <p>{rec.reason}</p>
-                          <span className="recPriority">Priority: {rec.priority}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {result.structured_bias_report.recommendations.safe_actions && result.structured_bias_report.recommendations.safe_actions.length > 0 && (
-                    <div className="recommendationSection">
-                      <h4>🟢 Safe / No Action</h4>
-                      {result.structured_bias_report.recommendations.safe_actions.map((rec, idx) => (
-                        <div key={idx} className="recommendationItem safe">
-                          <div className="recHeader">
-                            <strong>{rec.action}</strong>
-                            <span className="recTimeline">{rec.timeline}</span>
-                          </div>
-                          <p>{rec.reason}</p>
-                          <span className="recPriority">Priority: {rec.priority}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="recommendationSection">
-                    <h4>Urgent Actions</h4>
-                    {result.preprocessing_steps.filter(s => s.priority === "HIGH").map((step, idx) => (
-                      <div key={idx} className="recommendationItem urgent">
-                        <strong>{step.recommendation}</strong>
-                        <p>{step.issue}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="recommendationSection">
-                    <h4>Monitor</h4>
-                    {result.preprocessing_steps.filter(s => s.priority === "MEDIUM").map((step, idx) => (
-                      <div key={idx} className="recommendationItem monitor">
-                        <strong>{step.recommendation}</strong>
-                        <p>{step.issue}</p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Accuracy vs Fairness Tradeoff Slider */}
-        {result.tradeoff_curves && Object.keys(result.tradeoff_curves).length > 0 && (
-          <div className="insightCard animate-slideUp delay-3">
-            <h3>⚖️ Accuracy vs Fairness Tradeoff</h3>
-            <p>Adjust the slider to simulate applying active bias mitigation. Notice how fairness improves while accuracy may slightly decrease.</p>
-            
-            {(() => {
-              const mainCol = Object.keys(result.tradeoff_curves)[0];
-              const curve = result.tradeoff_curves[mainCol];
-              if (!curve) return null;
-              
-              const currentPoint = curve.find(c => c.mitigation_level >= tradeoffLevel) || curve[curve.length - 1];
-              const basePoint = curve[0];
-              const accDiff = ((currentPoint.accuracy - basePoint.accuracy) * 100).toFixed(1);
-              const fairDiff = ((currentPoint.fairness - basePoint.fairness) * 100).toFixed(1);
-              
-              return (
-                <div style={{marginTop: '20px', padding: '20px', background: '#f8f8f8', border: '1px solid #e5e5e5'}}>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    step="25" 
-                    value={tradeoffLevel} 
-                    onChange={e => setTradeoffLevel(parseInt(e.target.value))} 
-                    style={{width: '100%', marginBottom: '20px', accentColor: '#111'}}
-                  />
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#666'}}>
-                    <span>Base Model (0%)</span>
-                    <span>Full Mitigation (100%)</span>
-                  </div>
-                  
-                  <div style={{display: 'flex', justifyContent: 'center', marginTop: '20px', gap: '40px'}}>
-                    <div style={{textAlign: 'center'}}>
-                      <div style={{fontSize: '24px', fontWeight: 'bold'}}>{(currentPoint.accuracy * 100).toFixed(1)}%</div>
-                      <div style={{fontSize: '14px', color: '#666'}}>Model Accuracy</div>
-                      <div style={{color: accDiff < 0 ? '#EF4444' : '#666', fontSize: '12px'}}>{accDiff}% from base</div>
-                    </div>
-                    <div style={{textAlign: 'center'}}>
-                      <div style={{fontSize: '24px', fontWeight: 'bold'}}>{(currentPoint.fairness * 100).toFixed(1)}%</div>
-                      <div style={{fontSize: '14px', color: '#666'}}>Fairness (DI)</div>
-                      <div style={{color: fairDiff > 0 ? '#10B981' : '#666', fontSize: '12px'}}>+{fairDiff}% from base</div>
-                    </div>
-                  </div>
-                  
-                  {tradeoffLevel > 0 && (
-                    <div style={{marginTop: '20px', textAlign: 'center', fontWeight: 'bold', color: '#111'}}>
-                      "Fairness +{fairDiff}% → Accuracy {accDiff}%"
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-        {result.simulation_result && (
-          <div className="insightCard animate-slideUp delay-3">
-            <div className="cardHeader" onClick={() => toggleSection("simulation")}>
-              <h3>Fairness Simulation</h3>
-              <span className="toggleIcon">{expandedSections.simulation ? "▼" : "▶"}</span>
-            </div>
-            {expandedSections.simulation && (
-              <div className="cardContent">
-                <div className="simulationResult">
-                  <strong>Improvement: {result.simulation_result.improvement}</strong>
-                  <p>DP Diff Reduced: {(result.simulation_result.dp_diff_reduced * 100).toFixed(1)}%</p>
-                  <p>{result.simulation_result.explanation}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Mitigation Modal */}
-      {showMitigationModal && (
-        <div className="modalOverlay" onClick={() => setShowMitigationModal(false)}>
-          <div className="modalContent animate-slideUp" onClick={e => e.stopPropagation()} style={{background: '#fff', padding: '30px', maxWidth: '500px', margin: '100px auto', border: '1px solid #e5e5e5'}}>
-            <h2>Active Bias Mitigation</h2>
-            <p style={{marginBottom: '20px', color: '#666'}}>Select a method to reduce bias in your dataset.</p>
-            
-            <div className="formGroup" style={{marginBottom: '20px'}}>
-              <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>Mitigation Technique</label>
-              <div style={{padding: '12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '4px', fontSize: '14px'}}>
-                <strong>🤖 Auto-Debias Engine</strong><br/>
-                <small style={{color: '#666'}}>
-                  Full Real-Time Adaptive Debias Engine: Detects bias across ALL attributes, applies adaptive mitigation per attribute, validates results. Target: &gt;90% bias reduction.
-                </small>
-              </div>
-            </div>
-            
-            {originalFile ? (
-              <div style={{marginBottom: '30px', padding: '15px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '4px'}}>
-                <strong>Using uploaded file:</strong> {originalFile.name}
-              </div>
-            ) : (
-              <div className="formGroup" style={{marginBottom: '30px'}}>
-                <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>Original Dataset (CSV)</label>
-                <input type="file" id="mitigateFileInput" accept=".csv" style={{width: '100%'}} />
-              </div>
-            )}
-
-            <div className="modalActions" style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
-              <button className="secondaryButton" onClick={() => setShowMitigationModal(false)}>Cancel</button>
-              <button className="primaryButton" disabled={mitigating} onClick={async () => {
-                const fileToUse = originalFile || document.getElementById("mitigateFileInput")?.files[0];
-                if (!fileToUse) {
-                  alert("Please select the original CSV file.");
-                  return;
-                }
-                
-                setMitigating(true);
-                
-                try {
-                  // Call auto-debias-analyze to get updated analysis using new Real-Time Adaptive Debias Engine
-                  const formDataAnalyze = new FormData();
-                  formDataAnalyze.append("file", fileToUse);
-                  formDataAnalyze.append("target_column", result.detected_target);
-                  formDataAnalyze.append("sensitive_columns", JSON.stringify(result.detected_sensitive_columns));
-                  
-                  const analyzeResponse = await fetch("/auto-debias-analyze", {
-                    method: "POST",
-                    body: formDataAnalyze
-                  });
-                  
-                  if (!analyzeResponse.ok) throw new Error("Mitigation analysis failed");
-                  
-                  const newResult = await analyzeResponse.json();
-                  
-                  // Update dashboard with new analysis results
-                  navigate("/dashboard", { 
-                    state: { 
-                      result: newResult.analysis_result, 
-                      type: "dataset", 
-                      originalFile: fileToUse 
-                    },
-                    replace: true
-                  });
-                  
-                  // Also download the mitigated CSV using auto-debias endpoint
-                  const downloadFormData = new FormData();
-                  downloadFormData.append("file", fileToUse);
-                  downloadFormData.append("target_column", result.detected_target);
-                  downloadFormData.append("sensitive_columns", JSON.stringify(result.detected_sensitive_columns));
-                  
-                  const downloadResponse = await fetch("/auto-debias", {
-                    method: "POST",
-                    body: downloadFormData
-                  });
-                  if (downloadResponse.ok) {
-                    const blob = await downloadResponse.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `auto_debiased_${fileToUse.name}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                  }
-                  
-                  // Compute actual DI improvement and DP reduction from before/after metrics
-                  const pipelineResult = newResult.pipeline_result || {};
-                  const beforeMetrics = pipelineResult.before_metrics || {};
-                  const afterMetrics = pipelineResult.after_metrics || {};
-                  
-                  console.log("Pipeline result:", pipelineResult);
-                  console.log("Before metrics:", beforeMetrics);
-                  console.log("After metrics:", afterMetrics);
-                  
-                  let totalDiImprovement = 0;
-                  let totalDpReduction = 0;
-                  let attrCount = 0;
-                  
-                  Object.keys(beforeMetrics).forEach(attr => {
-                    const before = beforeMetrics[attr];
-                    const after = afterMetrics[attr];
-                    if (before && after) {
-                      const diImprovement = (after.di_ratio || 0) - (before.di_ratio || 0);
-                      const dpReduction = (before.dp_diff || 0) - (after.dp_diff || 0);
-                      totalDiImprovement += diImprovement;
-                      totalDpReduction += dpReduction;
-                      attrCount++;
-                      console.log(`Attr ${attr}: DI before=${before.di_ratio}, after=${after.di_ratio}, improvement=${diImprovement}`);
-                    }
-                  });
-                  
-                  const avgDiImprovement = attrCount > 0 ? totalDiImprovement / attrCount : 0;
-                  const avgDpReduction = attrCount > 0 ? totalDpReduction / attrCount : 0;
-                  
-                  console.log(`Average DI improvement: ${avgDiImprovement}, Average DP reduction: ${avgDpReduction}`);
-                  
-                  // Set mitigation results from pipeline
-                  setMitigationResults({
-                    method_used: pipelineResult.method_used || "Real-Time Adaptive Debias Engine",
-                    status: pipelineResult.status || "UNKNOWN",
-                    risk_score: pipelineResult.risk_score || 0,
-                    confidence: pipelineResult.confidence || "UNKNOWN",
-                    warnings: (pipelineResult.quality_gate && pipelineResult.quality_gate.issues) || [],
-                    improvement: {
-                      di_improvement: avgDiImprovement,
-                      dp_reduction: avgDpReduction
-                    }
-                  });
-                  setShowMitigationModal(false);
-                } catch(err) {
-                  alert("Error: " + err.message);
-                } finally {
-                  setMitigating(false);
-                }
-              }}>{mitigating ? "Processing..." : "Apply & Download"}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MitigationModal 
+        show={showMitigationModal} 
+        onClose={() => setShowMitigationModal(false)}
+        targetColumn={result.detected_target}
+        sensitiveColumn={result.detected_sensitive_columns[0]}
+      />
     </div>
   );
 }

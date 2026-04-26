@@ -1,8 +1,8 @@
 from typing import Dict, List
-
 import pandas as pd
+import numpy as np
 
-from app.services.insights import (
+from app.services.reporting.insights import (
     build_enhanced_explanation,
     classify_severity,
     compute_confidence,
@@ -13,36 +13,24 @@ from app.services.insights import (
     generate_recommendation,
     simulate_balanced_outcome,
 )
-from app.services.metrics import (
+from app.services.bias.metrics import (
     compute_fairness_metrics,
     compute_group_selection_rates,
     encode_positive_mask,
 )
-from app.services.mitigation import (
+from app.services.mitigation.strategies import (
+    suggest_feature_removal,
+    generate_preprocessing_recommendations as generate_data_preprocessing_steps
+)
+# Note: affected population estimation and report generation moved to reporting/insights.py or kept in mitigation for now
+from app.services.reporting.insights import (
     estimate_affected_population,
     generate_bias_report_summary,
-    generate_data_preprocessing_steps,
-    suggest_feature_removal,
     generate_structured_bias_report,
 )
-from app.services.patterns import detect_bias_drivers, detect_proxy_features
-from app.services.xai import generate_shap_importance, calculate_accuracy_fairness_tradeoff
-
-
-def _build_explanation(sensitive_column: str, group_rates: Dict[str, float], dp_diff: float) -> str:
-    if not group_rates:
-        return f"No valid groups found for sensitive column '{sensitive_column}'."
-
-    sorted_groups = sorted(group_rates.items(), key=lambda item: item[1], reverse=True)
-    highest_group, highest_rate = sorted_groups[0]
-    lowest_group, lowest_rate = sorted_groups[-1]
-
-    return (
-        f"Within '{sensitive_column}', group '{highest_group}' has a {highest_rate:.1%} selection rate, "
-        f"while group '{lowest_group}' has {lowest_rate:.1%}. "
-        f"This indicates a disparity of {dp_diff:.1%}, suggesting potential bias."
-    )
-
+from app.services.bias.patterns import detect_bias_drivers, detect_proxy_features
+from app.services.reporting.xai import generate_shap_importance, calculate_accuracy_fairness_tradeoff
+from app.core.logging import logger
 
 def _build_summary(target_column: str, sensitive_columns: List[str], fairness_metrics: Dict[str, Dict]) -> str:
     if not fairness_metrics:
@@ -58,12 +46,12 @@ def _build_summary(target_column: str, sensitive_columns: List[str], fairness_me
         f"of {strongest_metrics['dp_diff']:.1%} and disparate impact ratio of {strongest_metrics['di_ratio']:.3f}."
     )
 
-
 def analyze_dataset_bias(
     dataframe: pd.DataFrame,
     target_column: str,
     sensitive_columns: List[str],
 ) -> Dict:
+    logger.info(f"Starting dataset bias analysis for target: {target_column}")
     positive_mask, _ = encode_positive_mask(dataframe[target_column])
 
     fairness_results: Dict[str, Dict] = {}
@@ -73,11 +61,9 @@ def analyze_dataset_bias(
         group_rates = compute_group_selection_rates(dataframe, sensitive_column, positive_mask)
         metrics = compute_fairness_metrics(group_rates)
         
-        # Enhanced analysis
         severity = classify_severity(metrics["dp_diff"])
         group_analysis, missing_note = compute_group_analysis(dataframe, sensitive_column, group_rates, positive_mask)
         
-        # Add missing data note if any
         if missing_note:
             notes.append(missing_note)
         
@@ -85,7 +71,6 @@ def analyze_dataset_bias(
         recommendation = generate_recommendation(severity, sensitive_column)
         simulation = simulate_balanced_outcome(group_rates, metrics["dp_diff"])
         
-        # Add distribution context note
         dist_context = generate_distribution_context(group_rates, sensitive_column)
         if dist_context:
             notes.append(dist_context)
@@ -113,7 +98,9 @@ def analyze_dataset_bias(
         for metric in fairness_results.values()
     )
 
-    # Enhanced proxy features with explanations
+    # Optimization: Call expensive operations once
+    bias_drivers = detect_bias_drivers(dataframe, target_column)
+    
     proxy_features_raw = detect_proxy_features(dataframe, target_column, sensitive_columns)
     proxy_features = [
         {
@@ -127,10 +114,8 @@ def analyze_dataset_bias(
         for proxy in proxy_features_raw
     ]
 
-    # Intersectional bias detection
     intersectional_bias = detect_intersectional_bias(dataframe, sensitive_columns, positive_mask)
 
-    # Affected population estimation
     affected_population = {}
     for sensitive_column in sensitive_columns:
         if sensitive_column in fairness_results:
@@ -140,46 +125,41 @@ def analyze_dataset_bias(
                 dataframe, sensitive_column, group_rates, mean_rate
             )
 
-    # Preprocessing recommendations
     preprocessing_steps = generate_data_preprocessing_steps(
         dataframe, sensitive_columns, fairness_results
     )
 
-    # Feature removal suggestions
     feature_removals = suggest_feature_removal(proxy_features)
 
-    # Bias report summary for compliance
     bias_report_summary = generate_bias_report_summary(
         fairness_results, sensitive_columns, len(dataframe)
     )
 
-    # Structured bias report following the specified format
     structured_report = generate_structured_bias_report(
         dataframe=dataframe,
         fairness_metrics=fairness_results,
         sensitive_columns=sensitive_columns,
         target_column=target_column,
-        bias_drivers=detect_bias_drivers(dataframe, target_column),
+        bias_drivers=bias_drivers,
         proxy_features=proxy_features,
         intersectional_bias=intersectional_bias,
         affected_population=affected_population,
     )
 
-    # SHAP feature importance
     shap_importance = generate_shap_importance(dataframe, target_column)
     
-    # Tradeoff curves (calculating for the most sensitive column)
     tradeoff_curves = {}
     for sensitive_column in sensitive_columns:
         tradeoff_curves[sensitive_column] = calculate_accuracy_fairness_tradeoff(dataframe, target_column, sensitive_column)
 
+    logger.info("Dataset bias analysis completed successfully")
     return {
         "summary": _build_summary(target_column, sensitive_columns, fairness_results),
         "detected_target": target_column,
         "detected_sensitive_columns": sensitive_columns,
         "potential_bias_detected": potential_bias_detected,
         "fairness_metrics": fairness_results,
-        "bias_drivers": detect_bias_drivers(dataframe, target_column),
+        "bias_drivers": bias_drivers,
         "proxy_features": proxy_features,
         "intersectional_bias": intersectional_bias,
         "notes": notes,
