@@ -2405,3 +2405,104 @@ h1, h2, h3, h4, .eyebrow {
 .eyebrow {
   letter-spacing: 0.2em;
 }
+
+/* ── Sample Datasets ─────────────────────────────────────────── */
+.sampleDatasetsCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 28px;
+  margin-top: 20px;
+}
+
+.sampleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sampleDatasetBtn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sampleDatasetBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: #f0f0f0;
+}
+
+.sampleDatasetBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sampleDomain {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sampleName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.sampleDesc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.sampleRows {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.sampleLoading {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Example Prompts ─────────────────────────────────────────── */
+.examplePrompts {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.exampleGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.exampleBtn {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  color: var(--muted);
+  transition: border-color 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.exampleBtn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}

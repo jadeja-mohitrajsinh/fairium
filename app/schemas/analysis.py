@@ -111,6 +111,10 @@ class TextBiasResult(BaseModel):
     ambiguous_matches: List[str]
 
 
+class TextBiasRequest(BaseModel):
+    text: str
+
+
 class TextBiasAnalysisResponse(BaseModel):
     bias_detected: str  # Can be "Yes", "No", or "Possible"
     biases: List[TextBiasResult]

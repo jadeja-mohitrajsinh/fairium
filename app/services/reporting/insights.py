@@ -329,54 +329,235 @@ def generate_structured_bias_report(
     intersectional_bias: List[Dict],
     affected_population: Dict[str, Dict],
 ) -> Dict:
-    """Generate a complete, structured bias report following the specified format."""
+    """Generate a complete, structured bias report."""
     dataframe_size = len(dataframe)
     high_severity = [col for col, m in fairness_metrics.items() if m.get("severity") == "HIGH"]
     moderate_severity = [col for col, m in fairness_metrics.items() if m.get("severity") == "MODERATE"]
+    low_severity = [col for col, m in fairness_metrics.items() if m.get("severity") == "LOW"]
     overall_risk = "HIGH" if high_severity else "MODERATE" if moderate_severity else "LOW"
     compliance_status = "Requires Action" if high_severity else "Monitor" if moderate_severity else "Safe"
-    
-    # 2. ATTRIBUTE-LEVEL ANALYSIS
+    low_confidence_attrs = [col for col, m in fairness_metrics.items() if m.get("confidence") == "LOW"]
+
+    key_issue = "No significant bias detected"
+    if high_severity:
+        key_issue = f"High disparity in {high_severity[0]} requires immediate attention"
+    elif moderate_severity:
+        key_issue = f"Moderate disparity in {moderate_severity[0]} should be monitored"
+
+    executive_summary = (
+        f"High risk detected, primarily driven by {high_severity[0]} disparity. Immediate action required."
+        if high_severity else
+        f"Moderate risk detected in {moderate_severity[0]}. Monitor trends and validate findings."
+        if moderate_severity else
+        "No significant bias detected. System shows fair outcomes across all analyzed attributes."
+    )
+
+    recommended_decision = (
+        f"CRITICAL: Proceed only after mitigation of {', '.join(high_severity)} bias"
+        if high_severity else
+        f"WARNING: Proceed with monitoring of {', '.join(moderate_severity)} trends"
+        if moderate_severity else
+        "Safe to proceed with current system"
+    )
+
+    reliability_warning = (
+        f"WARNING: Results may be unreliable due to small sample sizes in "
+        f"{', '.join(low_confidence_attrs)}. Collect more data before making critical decisions."
+        if low_confidence_attrs else ""
+    )
+
+    # ATTRIBUTE-LEVEL ANALYSIS
     attribute_analysis = []
     for col, metrics in fairness_metrics.items():
-        if col not in sensitive_columns: continue
+        if col not in sensitive_columns:
+            continue
+        dp_diff = metrics.get("dp_diff", 0)
+        di_ratio = metrics.get("di_ratio", 1.0)
+        confidence = metrics.get("confidence", "MEDIUM")
+        group_analysis = metrics.get("group_analysis", [])
+        low_reliability_groups = [g for g in group_analysis if g.get("reliability") == "LOW"]
+
+        if low_reliability_groups:
+            reliability_note = f"Low Reliability: {len(low_reliability_groups)} groups have <30 samples"
+        else:
+            reliability_note = "High Reliability: All groups have sufficient sample sizes"
+
+        group_rates = metrics.get("group_rates", {})
+        if group_rates:
+            sorted_rates = sorted(group_rates.items(), key=lambda x: x[1], reverse=True)
+            key_insight = f"{sorted_rates[0][0]} has {sorted_rates[0][1]:.1%} vs {sorted_rates[-1][0]} at {sorted_rates[-1][1]:.1%}"
+        else:
+            key_insight = "Insufficient data for group comparison"
+
         attribute_analysis.append({
             "attribute_name": col,
             "risk_level": metrics.get("severity", "LOW"),
-            "dp_difference": f"{metrics.get('dp_diff', 0):.1%}",
-            "di_ratio": f"{metrics.get('di_ratio', 1.0):.2f}",
-            "confidence": metrics.get("confidence", "MEDIUM"),
+            "dp_difference": f"{dp_diff:.1%}" if not pd.isna(dp_diff) else "Insufficient Data",
+            "di_ratio": f"{di_ratio:.2f}" if not pd.isna(di_ratio) else "Insufficient Data",
+            "confidence": confidence,
             "explanation": metrics.get("explanation", ""),
-            "key_insight": metrics.get("key_insight", ""),
-            "data_reliability": metrics.get("data_reliability", "High"),
+            "key_insight": key_insight,
+            "data_reliability": reliability_note,
         })
-        
-    # Group disparity
+
+    # GROUP DISPARITY SUMMARY
     group_disparity = []
     for col, metrics in fairness_metrics.items():
-        if col not in sensitive_columns: continue
+        if col not in sensitive_columns:
+            continue
         group_rates = metrics.get("group_rates", {})
         if group_rates:
             sorted_rates = sorted(group_rates.items(), key=lambda x: x[1], reverse=True)
             highest_group, highest_rate = sorted_rates[0]
             lowest_group, lowest_rate = sorted_rates[-1]
-            ratio = highest_rate / lowest_rate if lowest_rate > 0 else float('inf')
+            ratio = highest_rate / lowest_rate if lowest_rate > 0 else float("inf")
             group_disparity.append({
                 "attribute": col,
                 "highest_performing_group": highest_group,
                 "lowest_performing_group": lowest_group,
-                "outcome_difference": f"{ratio:.1f}x" if ratio != float('inf') else "Extreme",
+                "outcome_difference": f"{ratio:.1f}x" if ratio != float("inf") else "Extreme",
             })
 
-    # Recommendations (simplified for structural consistency)
-    urgent_actions = []
-    for col in high_severity:
-        urgent_actions.append({
-            "action": f"Mitigate {col} bias",
-            "reason": "High disparity detected",
-            "timeline": "Within 1 week",
-            "priority": "CRITICAL"
+    # BIAS DRIVERS
+    bias_drivers_explained = []
+    for driver in bias_drivers:
+        feature = driver.get("feature", "Unknown")
+        impact = driver.get("impact", 0)
+        is_proxy = any(pf.get("feature") == feature for pf in proxy_features)
+        if is_proxy:
+            proxy_corr = next((pf.get("correlation", 0) for pf in proxy_features if pf.get("feature") == feature), 0)
+            explanation = (f"Feature '{feature}' has significant influence ({impact:.2f}) and is highly "
+                           f"correlated ({proxy_corr:.2f}) with sensitive attributes, potentially encoding systemic bias.")
+        else:
+            explanation = (f"Feature '{feature}' has significant influence ({impact:.2f}) on predictions "
+                           f"and may contribute to disparate outcomes due to historical patterns in the data.")
+        bias_drivers_explained.append({
+            "feature": feature,
+            "impact": f"{impact:.2f}" if not pd.isna(impact) else "Insufficient Data",
+            "explanation": explanation,
+            "is_proxy": is_proxy,
         })
+
+    # INTERSECTIONAL ANALYSIS
+    if not intersectional_bias:
+        intersectional_analysis = {
+            "status": "Insufficient Data",
+            "message": "Need at least 2 sensitive attributes with sufficient sample sizes (≥30 per group).",
+        }
+    else:
+        intersectional_analysis = {
+            "status": "Available",
+            "top_risky_combinations": [
+                {
+                    "combination": item.get("group", "Unknown"),
+                    "selection_rate": f"{item.get('selection_rate', 0):.1%}",
+                    "risk_level": item.get("risk_level", "LOW"),
+                }
+                for item in intersectional_bias[:3]
+            ],
+        }
+
+    # IMPACT ASSESSMENT
+    impact_assessment = []
+    for col, pop_data in affected_population.items():
+        total_affected = pop_data.get("total_affected_individuals", 0)
+        group_impacts = [
+            {
+                "group": g.get("group", "Unknown"),
+                "disadvantaged_count": g.get("disadvantaged_count", 0),
+                "total_count": g.get("total_count", 0),
+            }
+            for g in pop_data.get("affected_groups", [])
+        ]
+        impact_assessment.append({
+            "attribute": col,
+            "total_affected_individuals": total_affected,
+            "disadvantaged_groups": group_impacts,
+            "explanation": pop_data.get("explanation", ""),
+        })
+
+    # RECOMMENDATIONS
+    urgent_actions = []
+    monitor_actions = []
+    safe_actions = []
+
+    if high_severity:
+        urgent_actions.append({
+            "action": f"Apply reweighting or resampling for: {', '.join(high_severity)}",
+            "reason": "High disparity detected. Implement sample reweighting to balance group representation during model training.",
+            "timeline": "Within 1 week",
+            "priority": "CRITICAL",
+        })
+        affected_proxies = [pf for pf in proxy_features if pf.get("sensitive_column") in high_severity]
+        if affected_proxies:
+            proxy_names = ", ".join([pf.get("feature", "unknown") for pf in affected_proxies])
+            urgent_actions.append({
+                "action": f"Audit and remove proxy features: {proxy_names}",
+                "reason": "These features are highly correlated with sensitive attributes and may encode systemic bias.",
+                "timeline": "Within 2 weeks",
+                "priority": "HIGH",
+            })
+
+    if low_confidence_attrs:
+        urgent_actions.append({
+            "action": f"Collect more data for: {', '.join(low_confidence_attrs)}",
+            "reason": "High or moderate disparity detected but confidence is LOW due to small sample sizes.",
+            "timeline": "Within 1 month",
+            "priority": "HIGH",
+        })
+
+    if moderate_severity:
+        monitor_actions.append({
+            "action": f"Monitor disparity trends for: {', '.join(moderate_severity)} over the next 30 days",
+            "reason": "Moderate disparity should be tracked. Set up automated monitoring to detect if disparity increases.",
+            "timeline": "Ongoing — review in 30 days",
+            "priority": "MEDIUM",
+        })
+        monitor_actions.append({
+            "action": f"Validate findings for: {', '.join(moderate_severity)} with additional datasets",
+            "reason": "Cross-validation helps confirm whether disparities are consistent across datasets.",
+            "timeline": "Within 2 weeks",
+            "priority": "MEDIUM",
+        })
+
+    if low_severity:
+        safe_actions.append({
+            "action": f"Continue standard monitoring for: {', '.join(low_severity)}",
+            "reason": "Low disparity indicates fair outcomes. Maintain current practices and run regular bias audits.",
+            "timeline": "Quarterly review",
+            "priority": "LOW",
+        })
+
+    for col in sensitive_columns:
+        missing_pct = dataframe[col].isna().sum() / len(dataframe) * 100
+        if missing_pct > 5:
+            urgent_actions.append({
+                "action": f"Handle missing values in '{col}' using imputation",
+                "reason": f"{missing_pct:.1f}% missing data may bias results. Use median/mode imputation or create an 'unknown' category.",
+                "timeline": "Within 1 week",
+                "priority": "HIGH",
+            })
+
+    # DATA ISSUES
+    data_issues = []
+    for col, metrics in fairness_metrics.items():
+        if col not in sensitive_columns:
+            continue
+        di_ratio = metrics.get("di_ratio", 1.0)
+        group_analysis = metrics.get("group_analysis", [])
+        if pd.isna(di_ratio) or di_ratio == 0 or di_ratio > 10:
+            data_issues.append({
+                "attribute": col,
+                "issue": "Extreme Disparate Impact Ratio",
+                "explanation": f"DI ratio of {di_ratio} indicates extreme imbalance, possibly due to very small group sizes.",
+            })
+        low_sample_groups = [g for g in group_analysis if g.get("total_samples", 0) < 30]
+        if low_sample_groups:
+            data_issues.append({
+                "attribute": col,
+                "issue": "Low Sample Size Warning",
+                "explanation": f"{len(low_sample_groups)} groups have fewer than 30 samples, which may lead to unreliable conclusions.",
+            })
 
     return {
         "overall_summary": {
@@ -384,14 +565,20 @@ def generate_structured_bias_report(
             "records_analyzed": dataframe_size,
             "sensitive_attributes": len(sensitive_columns),
             "compliance_status": compliance_status,
-            "executive_summary": f"{overall_risk} risk detected.",
-            "recommended_decision": "Proceed with caution" if high_severity else "Safe to proceed",
+            "key_issue": key_issue,
+            "executive_summary": executive_summary,
+            "recommended_decision": recommended_decision,
+            "reliability_warning": reliability_warning,
         },
         "attribute_level_analysis": attribute_analysis,
         "group_disparity_summary": group_disparity,
+        "bias_drivers": bias_drivers_explained,
+        "intersectional_analysis": intersectional_analysis,
+        "impact_assessment": impact_assessment,
         "recommendations": {
             "urgent_actions": urgent_actions,
-            "monitor_actions": [],
-            "safe_actions": [],
-        }
+            "monitor_actions": monitor_actions,
+            "safe_actions": safe_actions,
+        },
+        "data_issues": data_issues,
     }

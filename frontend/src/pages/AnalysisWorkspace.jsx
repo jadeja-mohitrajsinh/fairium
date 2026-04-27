@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { analyzeDataset, analyzeText } from "../api";
+import { analyzeDataset, analyzeText, fetchSampleDatasets, loadSampleDataset } from "../api";
+
+const DOMAIN_LABELS = {
+  income: "💰 Income",
+  hiring: "💼 Hiring",
+  lending: "🏦 Lending",
+  criminal_justice: "⚖️ Justice",
+};
 
 function ProcessingIndicator({ steps, currentStep }) {
   return (
@@ -16,7 +23,7 @@ function ProcessingIndicator({ steps, currentStep }) {
             className={`processingStep ${index <= currentStep ? "active" : ""} ${index === currentStep ? "current" : ""}`}
           >
             <div className="stepIndicator">
-              {index < currentStep ? "Done" : index + 1}
+              {index < currentStep ? "✓" : index + 1}
             </div>
             <span className="stepLabel">{step}</span>
           </div>
@@ -35,10 +42,49 @@ export default function AnalysisWorkspace() {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState("");
+  const [sampleDatasets, setSampleDatasets] = useState([]);
+  const [loadingSample, setLoadingSample] = useState(null);
   const navigate = useNavigate();
 
-  const datasetSteps = ["Uploading", "Analyzing", "Generating Results"];
-  const textSteps = ["Processing", "Analyzing", "Generating Results"];
+  const datasetSteps = [
+    "Uploading file",
+    "Detecting columns",
+    "Computing fairness metrics",
+    "Analyzing bias drivers",
+    "Generating report",
+  ];
+  const textSteps = [
+    "Processing text",
+    "Rule-based detection",
+    "ML classification",
+    "Generating insights",
+  ];
+
+  useEffect(() => {
+    fetchSampleDatasets()
+      .then((data) => setSampleDatasets(data.datasets || []))
+      .catch(() => {}); // silently fail — sample datasets are optional
+  }, []);
+
+  const runDatasetAnalysis = async (fileToAnalyze) => {
+    setLoading(true);
+    setCurrentStep(0);
+    setError("");
+    try {
+      setCurrentStep(1);
+      const data = await analyzeDataset({ file: fileToAnalyze });
+      setCurrentStep(2);
+      await new Promise((r) => setTimeout(r, 150));
+      setCurrentStep(3);
+      await new Promise((r) => setTimeout(r, 150));
+      setCurrentStep(4);
+      setDatasetResult(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDatasetSubmit = async (event) => {
     event.preventDefault();
@@ -46,24 +92,22 @@ export default function AnalysisWorkspace() {
       setError("Please choose a CSV file.");
       return;
     }
+    await runDatasetAnalysis(file);
+  };
 
-    setLoading(true);
-    setCurrentStep(0);
+  const handleSampleLoad = async (datasetId) => {
+    setLoadingSample(datasetId);
     setError("");
-    
     try {
-      setCurrentStep(0); // Uploading
-      const data = await analyzeDataset({ file });
-      
-      setCurrentStep(1); // Analyzing
-      await new Promise(r => setTimeout(r, 200)); // Minor delay for UX
-      
-      setCurrentStep(2); // Generating
-      setDatasetResult(data);
+      const blob = await loadSampleDataset(datasetId);
+      const ds = sampleDatasets.find((d) => d.id === datasetId);
+      const sampleFile = new File([blob], `${ds?.name || datasetId}.csv`, { type: "text/csv" });
+      setFile(sampleFile);
+      await runDatasetAnalysis(sampleFile);
     } catch (err) {
-      setError(err.message);
+      setError(`Failed to load sample dataset: ${err.message}`);
     } finally {
-      setLoading(false);
+      setLoadingSample(null);
     }
   };
 
@@ -73,19 +117,15 @@ export default function AnalysisWorkspace() {
       setError("Please enter text to analyze.");
       return;
     }
-
     setLoading(true);
     setCurrentStep(0);
     setError("");
-    
     try {
-      setCurrentStep(0); // Processing
+      setCurrentStep(1);
       const data = await analyzeText({ text });
-      
-      setCurrentStep(1); // Analyzing
-      await new Promise(r => setTimeout(r, 200));
-      
-      setCurrentStep(2); // Generating
+      setCurrentStep(2);
+      await new Promise((r) => setTimeout(r, 150));
+      setCurrentStep(3);
       setTextResult(data);
     } catch (err) {
       setError(err.message);
@@ -96,9 +136,7 @@ export default function AnalysisWorkspace() {
 
   const handleViewFullInsights = (type) => {
     const res = type === "dataset" ? datasetResult : textResult;
-    if (res) {
-      navigate("/dashboard", { state: { result: res, type } });
-    }
+    if (res) navigate("/dashboard", { state: { result: res, type } });
   };
 
   return (
@@ -107,63 +145,189 @@ export default function AnalysisWorkspace() {
         <div>
           <p className="eyebrow">FairSight Core</p>
           <h1>Analysis Workspace</h1>
-          <p className="subtitle">Enterprise AI fairness analysis platform</p>
+          <p className="subtitle">Upload datasets or enter text to detect bias and unfair patterns</p>
         </div>
       </header>
 
       <div className="tabs">
-        <button className={`tab ${activeTab === "dataset" ? "active" : ""}`} onClick={() => setActiveTab("dataset")}>Dataset Analysis</button>
-        <button className={`tab ${activeTab === "text" ? "active" : ""}`} onClick={() => setActiveTab("text")}>Text Analysis</button>
+        <button className={`tab ${activeTab === "dataset" ? "active" : ""}`} onClick={() => setActiveTab("dataset")}>
+          Dataset Analysis
+        </button>
+        <button className={`tab ${activeTab === "text" ? "active" : ""}`} onClick={() => setActiveTab("text")}>
+          Text Analysis
+        </button>
       </div>
 
-      <div className="analysisSection">
-        {activeTab === "dataset" ? (
+      {activeTab === "dataset" ? (
+        <div className="analysisSection">
           <div className="uploadCard animate-slideUp delay-1">
             <h2>Upload Dataset</h2>
+            <p className="uploadHint">Drag and drop your CSV file or click to browse</p>
+
             <form className="uploadForm" onSubmit={handleDatasetSubmit}>
-              <div className={`dropZone ${file ? "hasFile" : ""}`} onClick={() => document.getElementById("fileInput").click()}>
-                <input id="fileInput" type="file" accept=".csv" onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ display: "none" }} />
+              <div
+                className={`dropZone ${file ? "hasFile" : ""}`}
+                onClick={() => document.getElementById("fileInput").click()}
+              >
+                <input
+                  id="fileInput"
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
                 {file ? (
                   <div className="filePreview">
+                    <span className="fileIcon">📄</span>
                     <span className="fileName">{file.name}</span>
+                    <span className="fileSize">{(file.size / 1024).toFixed(1)} KB</span>
                   </div>
                 ) : (
-                  <p>Click to upload or drag and drop CSV</p>
+                  <div className="dropZoneContent">
+                    <span className="uploadIcon">⬆</span>
+                    <p>Click to upload or drag and drop</p>
+                    <small>CSV files only · max 50 MB</small>
+                  </div>
                 )}
               </div>
+
               <button className="primaryButton" type="submit" disabled={loading || !file}>
                 {loading ? "Analyzing..." : "Analyze Dataset"}
               </button>
             </form>
+
             {loading && <ProcessingIndicator steps={datasetSteps} currentStep={currentStep} />}
             {error && <div className="errorBox">{error}</div>}
           </div>
-        ) : (
+
+          {/* Sample Datasets */}
+          {sampleDatasets.length > 0 && !loading && (
+            <div className="sampleDatasetsCard animate-slideUp delay-2">
+              <h3>Try a Sample Dataset</h3>
+              <p className="uploadHint">Real-world fairness benchmarks — click to load and analyze instantly</p>
+              <div className="sampleGrid">
+                {sampleDatasets.map((ds) => (
+                  <button
+                    key={ds.id}
+                    className="sampleDatasetBtn"
+                    onClick={() => handleSampleLoad(ds.id)}
+                    disabled={loadingSample !== null || loading}
+                  >
+                    <span className="sampleDomain">{DOMAIN_LABELS[ds.domain] || ds.domain}</span>
+                    <strong className="sampleName">{ds.name}</strong>
+                    <span className="sampleDesc">{ds.description}</span>
+                    <span className="sampleRows">{ds.rows.toLocaleString()} rows</span>
+                    {loadingSample === ds.id && <span className="sampleLoading">Loading...</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {datasetResult && (
+            <div className="resultPreviewCard animate-slideUp delay-2">
+              <div className="resultHeader">
+                <h3>Analysis Complete</h3>
+                <span className={`statusBadge ${datasetResult.potential_bias_detected ? "status-danger" : "status-safe"}`}>
+                  {datasetResult.potential_bias_detected ? "⚠ Bias Detected" : "✓ No Bias"}
+                </span>
+              </div>
+              <div className="resultContent">
+                <div className="resultItem">
+                  <span className="resultLabel">Target Column</span>
+                  <span className="resultValue">{datasetResult.detected_target}</span>
+                </div>
+                <div className="resultItem">
+                  <span className="resultLabel">Sensitive Attributes</span>
+                  <span className="resultValue">{datasetResult.detected_sensitive_columns.join(", ")}</span>
+                </div>
+                <div className="resultItem">
+                  <span className="resultLabel">Risk Level</span>
+                  <span className={`resultValue risk-${datasetResult.bias_report_summary.overall_risk_level.toLowerCase()}`}>
+                    {datasetResult.bias_report_summary.overall_risk_level}
+                  </span>
+                </div>
+                <p className="resultSummary">{datasetResult.summary}</p>
+              </div>
+              <button className="secondaryButton" onClick={() => handleViewFullInsights("dataset")}>
+                View Full Insights →
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="analysisSection">
           <div className="textCard animate-slideUp delay-1">
-            <h2>Text Analysis</h2>
+            <h2>Text Bias Analysis</h2>
+            <p className="uploadHint">Detect bias, microaggressions, and discriminatory language in text</p>
+
             <form className="textForm" onSubmit={handleTextSubmit}>
-              <textarea className="textInput" rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter text..." />
+              <textarea
+                className="textInput"
+                rows={6}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Paste a job description, policy document, or any text to analyze for bias..."
+              />
               <button className="primaryButton" type="submit" disabled={loading || !text.trim()}>
                 {loading ? "Analyzing..." : "Analyze Text"}
               </button>
             </form>
+
             {loading && <ProcessingIndicator steps={textSteps} currentStep={currentStep} />}
             {error && <div className="errorBox">{error}</div>}
-          </div>
-        )}
 
-        {(activeTab === "dataset" ? datasetResult : textResult) && (
-          <div className="resultPreviewCard animate-slideUp delay-2">
-            <h3>Analysis Result</h3>
-            <div className="resultContent">
-               <p>{(activeTab === "dataset" ? datasetResult : textResult).summary}</p>
-            </div>
-            <button className="secondaryButton" onClick={() => handleViewFullInsights(activeTab)}>
-              View Full Insights
-            </button>
+            {/* Example prompts */}
+            {!text && !loading && (
+              <div className="examplePrompts">
+                <p className="uploadHint">Try an example:</p>
+                <div className="exampleGrid">
+                  {[
+                    "We are looking for a young, energetic candidate who fits our traditional work culture.",
+                    "Only male candidates with strong technical backgrounds should apply.",
+                    "We prefer candidates from urban backgrounds with top-tier university degrees.",
+                  ].map((example, i) => (
+                    <button key={i} className="exampleBtn" onClick={() => setText(example)}>
+                      {example.substring(0, 60)}...
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {textResult && (
+            <div className="resultPreviewCard animate-slideUp delay-2">
+              <div className="resultHeader">
+                <h3>Analysis Result</h3>
+                <span className={`statusBadge ${
+                  textResult.bias_detected === "Yes" ? "status-danger" :
+                  textResult.bias_detected === "Possible" ? "status-warning" : "status-safe"
+                }`}>
+                  {textResult.bias_detected === "Yes" ? "⚠ Bias Detected" :
+                   textResult.bias_detected === "Possible" ? "~ Possible Bias" : "✓ No Bias"}
+                </span>
+              </div>
+              <div className="resultContent">
+                <div className="resultItem">
+                  <span className="resultLabel">Confidence</span>
+                  <span className="resultValue">{textResult.overall_confidence}</span>
+                </div>
+                {textResult.biases.length > 0 && (
+                  <div className="resultItem">
+                    <span className="resultLabel">Bias Types Found</span>
+                    <span className="resultValue">{textResult.biases.map((b) => b.type).join(", ")}</span>
+                  </div>
+                )}
+                <p className="resultSummary">{textResult.summary}</p>
+              </div>
+              <button className="secondaryButton" onClick={() => handleViewFullInsights("text")}>
+                View Full Insights →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
