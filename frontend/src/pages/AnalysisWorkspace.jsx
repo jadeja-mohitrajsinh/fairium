@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { analyzeDataset, analyzeText, fetchSampleDatasets, loadSampleDataset } from "../api";
-
 const DOMAIN_LABELS = {
   income: "💰 Income",
   hiring: "💼 Hiring",
@@ -147,6 +146,9 @@ export default function AnalysisWorkspace() {
           <h1>Analysis Workspace</h1>
           <p className="subtitle">Upload datasets or enter text to detect bias and unfair patterns</p>
         </div>
+        <button className="decisionAnalysisBtn" onClick={() => navigate("/decisions")}>
+          🤖 Analyze AI Decisions
+        </button>
       </header>
 
       <div className="tabs">

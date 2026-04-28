@@ -68,3 +68,27 @@ export async function loadSampleDataset(datasetId) {
   }
   return response.blob();
 }
+
+export async function analyzeDecisions({ file, predictionColumn, actualColumn, sensitiveColumns }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (predictionColumn) formData.append("prediction_column", predictionColumn);
+  if (actualColumn) formData.append("actual_column", actualColumn);
+  if (sensitiveColumns) formData.append("sensitive_columns", sensitiveColumns);
+
+  const response = await fetch(`${API_BASE}/analyze-decisions`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function detectColumns({ file }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(`${API_BASE}/detect-columns`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse(response);
+}
