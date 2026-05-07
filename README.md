@@ -25,6 +25,11 @@ AI systems increasingly make critical decisions affecting human lives. When trai
 - **Intersectional bias analysis** - Detects bias across combinations of sensitive attributes
 - **Proxy bias detection** - Identifies features that may indirectly encode sensitive attributes
 - **Text bias analysis** - Hybrid ML + rule-based detection of bias in text (job descriptions, policies, etc.)
+- . Model Explainability (XAI) Integration 
+
+Add SHAP/LIME explanations showing why specific predictions are biased
+Feature importance breakdowns per demographic group
+Counterfactual explanations: "If this applicant were 5 years older, the decision would change
 
 ###  Human-Readable Insights
 - **Plain language explanations** - Clear, actionable descriptions of bias findings
