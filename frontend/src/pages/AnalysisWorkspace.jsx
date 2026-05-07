@@ -146,9 +146,14 @@ export default function AnalysisWorkspace() {
           <h1>Analysis Workspace</h1>
           <p className="subtitle">Upload datasets or enter text to detect bias and unfair patterns</p>
         </div>
-        <button className="decisionAnalysisBtn" onClick={() => navigate("/decisions")}>
-          🤖 Analyze AI Decisions
-        </button>
+        <div className="headerButtons">
+          <button className="xaiBtn" onClick={() => navigate("/explain")}>
+            🔍 Explain AI Decisions
+          </button>
+          <button className="decisionAnalysisBtn" onClick={() => navigate("/decisions")}>
+            🤖 Analyze AI Decisions
+          </button>
+        </div>
       </header>
 
       <div className="tabs">

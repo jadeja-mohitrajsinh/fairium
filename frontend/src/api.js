@@ -92,3 +92,54 @@ export async function detectColumns({ file }) {
   });
   return handleResponse(response);
 }
+
+export async function explainFeatureImportance({ file, predictionColumn, sensitiveColumn, featureColumns }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (predictionColumn) formData.append("prediction_column", predictionColumn);
+  if (sensitiveColumn) formData.append("sensitive_column", sensitiveColumn);
+  if (featureColumns) formData.append("feature_columns", featureColumns);
+
+  const response = await fetch(`${API_BASE}/explain/feature-importance`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function explainPredictions({ file, predictionColumn, featureColumns, sampleIndices, numSamples }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (predictionColumn) formData.append("prediction_column", predictionColumn);
+  if (featureColumns) formData.append("feature_columns", featureColumns);
+  if (sampleIndices) formData.append("sample_indices", sampleIndices);
+  if (numSamples) formData.append("num_samples", numSamples.toString());
+
+  const response = await fetch(`${API_BASE}/explain/predictions`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function generateCounterfactuals({ file, predictionColumn, featureColumns, sensitiveColumns, instanceIndex, desiredOutcome, numCounterfactuals }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("instance_index", instanceIndex.toString());
+  if (predictionColumn) formData.append("prediction_column", predictionColumn);
+  if (featureColumns) formData.append("feature_columns", featureColumns);
+  if (sensitiveColumns) formData.append("sensitive_columns", sensitiveColumns);
+  if (desiredOutcome !== undefined && desiredOutcome !== null) formData.append("desired_outcome", desiredOutcome.toString());
+  if (numCounterfactuals) formData.append("num_counterfactuals", numCounterfactuals.toString());
+
+  const response = await fetch(`${API_BASE}/explain/counterfactuals`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function fetchExplainInfo() {
+  const response = await fetch(`${API_BASE}/explain/info`);
+  return handleResponse(response);
+}

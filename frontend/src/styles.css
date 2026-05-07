@@ -2743,3 +2743,672 @@ h1, h2, h3, h4, .eyebrow {
 
 .smallMuted { font-size: 12px; color: var(--muted); }
 .decisionResults { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Header Buttons ────────────────────────────────────────────── */
+.headerButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.xaiBtn {
+  padding: 10px 20px;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.xaiBtn:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+}
+
+/* ── XAI Explainer Page ──────────────────────────────────────── */
+.xaiContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.xaiHeader {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.xaiHeader h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+}
+
+.backButton {
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.backButton:hover {
+  background: var(--surface2);
+}
+
+.xaiContent {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .xaiContent {
+    grid-template-columns: 1fr;
+  }
+}
+
+.xaiSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.xaiSidebar h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+}
+
+.uploadSection,
+.configSection,
+.tabsSection,
+.cfConfig {
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.fileUpload input[type="file"] {
+  display: none;
+}
+
+.fileLabel {
+  display: block;
+  padding: 12px;
+  border: 2px dashed var(--border);
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.fileLabel:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.fileInfo {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.configField {
+  margin-bottom: 12px;
+}
+.configField label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.configField input,
+.configField select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+.configField small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.tabButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tabButtons button {
+  padding: 10px 14px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.tabButtons button:hover {
+  background: var(--surface2);
+}
+.tabButtons button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.runAnalysisBtn {
+  padding: 12px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.runAnalysisBtn:hover:not(:disabled) {
+  background: var(--accentHover);
+}
+.runAnalysisBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.xaiMain {
+  min-height: 600px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+}
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.emptyState h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+}
+.emptyState p {
+  color: var(--muted);
+  max-width: 500px;
+  margin: 0 auto 32px;
+}
+
+.featureCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.featureCard {
+  padding: 20px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.featureCard .icon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 12px;
+}
+.featureCard h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+}
+.featureCard p {
+  font-size: 13px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.loadingState {
+  text-align: center;
+  padding: 60px 20px;
+}
+.loadingState p {
+  color: var(--muted);
+  margin-top: 16px;
+}
+
+.resultsSection h2 {
+  margin: 0 0 16px 0;
+  font-size: 22px;
+}
+
+.modelInfo {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--surface2);
+  font-size: 12px;
+}
+.modelInfo span {
+  color: var(--muted);
+}
+
+/* Feature Importance Chart */
+.xaiChart {
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+.xaiChart h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+}
+.importanceBars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.importanceBarRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.featureName {
+  width: 140px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+.importanceBarContainer {
+  flex: 1;
+  height: 24px;
+  background: var(--surface2);
+  position: relative;
+}
+.importanceBar {
+  height: 100%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  min-width: 40px;
+}
+.importanceValue {
+  font-size: 11px;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Group Comparison */
+.groupComparison {
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+.groupComparison h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+}
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.groupCard {
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.groupCard h5 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+}
+.sampleSize {
+  font-size: 11px;
+  color: var(--muted);
+}
+.groupFeatures {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0 0;
+}
+.groupFeatures li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.featureRank {
+  width: 20px;
+  height: 20px;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.featureNameSmall {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.featureImp {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.divergentFeatures {
+  padding: 16px;
+  background: #fff8e1;
+  border-left: 3px solid #f39c12;
+}
+.divergentFeatures h5 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+.divergentFeatures ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.divergentItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.diffBadge {
+  padding: 2px 8px;
+  background: var(--surface2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Bias Indicators */
+.biasIndicators {
+  margin-bottom: 24px;
+}
+.biasIndicators h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #c0392b;
+}
+.biasAlert {
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid #c0392b;
+}
+.biasAlert.bias-moderate {
+  border-left-color: #f39c12;
+}
+.biasAlert.bias-low {
+  border-left-color: #27ae60;
+}
+.severityBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #c0392b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.biasAlert p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.indicatorType {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Prediction Explanations */
+.predictionExplanations h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+}
+.resultsMeta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.explanationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.explanationCard {
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+.explanationHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.instanceIndex {
+  font-weight: 600;
+  font-size: 14px;
+}
+.predictionBadge {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pred-positive {
+  background: #d5f4e6;
+  color: #27ae60;
+}
+.pred-negative {
+  background: #fadbd8;
+  color: #c0392b;
+}
+.explanationSummary {
+  font-size: 14px;
+  margin: 0 0 16px 0;
+  padding: 12px;
+  background: var(--surface2);
+}
+.featureContributions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .featureContributions {
+    grid-template-columns: 1fr;
+  }
+}
+.positiveFeatures h6,
+.negativeFeatures h6 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.positiveFeatures h6 {
+  color: #27ae60;
+}
+.negativeFeatures h6 {
+  color: #c0392b;
+}
+.positiveFeatures ul,
+.negativeFeatures ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.positiveFeatures li,
+.negativeFeatures li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.contribFeature {
+  color: var(--text);
+}
+.contribValue {
+  font-weight: 600;
+}
+.contribValue.positive {
+  color: #27ae60;
+}
+.contribValue.negative {
+  color: #c0392b;
+}
+.noneText {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Counterfactuals */
+.counterfactualSection h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+}
+.originalInstance {
+  padding: 16px;
+  background: var(--surface2);
+  margin-bottom: 16px;
+}
+.originalInstance h5 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+.predictionCompare {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.origPred,
+.targetPred {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.origPred.positive,
+.targetPred.positive {
+  background: #d5f4e6;
+  color: #27ae60;
+}
+.origPred.negative,
+.targetPred.negative {
+  background: #fadbd8;
+  color: #c0392b;
+}
+.arrow {
+  font-size: 18px;
+  color: var(--muted);
+}
+.cfBiasAlert {
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fadbd8;
+  border-left: 3px solid #c0392b;
+}
+.alertIcon {
+  margin-right: 8px;
+}
+.sensitiveChange {
+  font-weight: 600;
+  color: #c0392b;
+}
+.counterfactualsList h6 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+.counterfactualCard {
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.cfHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.cfNumber {
+  font-weight: 600;
+  font-size: 13px;
+}
+.cfDistance,
+.cfChanges {
+  font-size: 11px;
+  color: var(--muted);
+}
+.cfChangesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cfChangeItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #fff;
+  font-size: 13px;
+}
+.changeFeature {
+  font-weight: 600;
+  min-width: 120px;
+}
+.changeArrow {
+  flex: 1;
+  color: var(--muted);
+}
+.changeType {
+  padding: 2px 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.changeType.increase {
+  background: #d5f4e6;
+  color: #27ae60;
+}
+.changeType.decrease {
+  background: #fadbd8;
+  color: #c0392b;
+}
+.changeType.changed {
+  background: var(--surface2);
+}
+.cfSummary {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--surface2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.note {
+  padding: 12px;
+  background: var(--surface2);
+  font-size: 13px;
+  color: var(--muted);
+}
