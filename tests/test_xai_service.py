@@ -174,7 +174,7 @@ class TestExplainPredictions:
             df=sample_dataframe,
             model=trained_model,
             prediction_col="prediction",
-            feature_columns=["feature1", "feature2"],
+            feature_columns=["feature1", "feature2", "feature3", "age"],
             sample_indices=[0, 5, 10],
         )
         

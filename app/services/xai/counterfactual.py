@@ -200,7 +200,7 @@ def _search_counterfactuals(
     
     # Get predictions for all rows if not present
     if 'prediction' not in df.columns:
-        X = df[feature_cols].fillna(df[feature_cols].median())
+        X = df[feature_cols].fillna(df[feature_cols].median(numeric_only=True))
         for col in X.columns:
             if X[col].dtype == 'object':
                 X[col] = pd.Categorical(X[col]).codes
@@ -214,7 +214,7 @@ def _search_counterfactuals(
         return []
     
     # Find nearest neighbors with desired outcome
-    X_desired = desired_df[feature_cols].fillna(desired_df[feature_cols].median())
+    X_desired = desired_df[feature_cols].fillna(desired_df[feature_cols].median(numeric_only=True))
     
     # Encode categorical variables
     for col in X_desired.columns:
@@ -226,13 +226,15 @@ def _search_counterfactuals(
     nn.fit(X_desired)
     
     # Prepare instance
-    instance_features = instance[feature_cols].fillna(0)
+    instance_features = instance[feature_cols].copy()
+    instance_features = instance_features.fillna(0)
     for col in instance_features.index:
-        if col in X_desired.columns and X_desired[col].dtype != instance_features[col].dtype:
-            try:
-                instance_features[col] = float(instance_features[col])
-            except (ValueError, TypeError):
-                instance_features[col] = 0
+        if col in X_desired.columns:
+            if pd.api.types.is_numeric_dtype(X_desired[col]):
+                try:
+                    instance_features[col] = float(instance_features[col])
+                except (ValueError, TypeError):
+                    instance_features[col] = 0
     
     # Find neighbors
     distances, indices = nn.kneighbors([instance_features.values])
@@ -392,6 +394,14 @@ def _get_prediction(model: Any, instance: pd.Series) -> int:
             X[col] = pd.Categorical(X[col]).codes
     
     X = X.fillna(0)
+    
+    if hasattr(model, 'feature_names_in_'):
+        expected_features = model.feature_names_in_
+        X = X[[c for c in expected_features if c in X.columns]]
+    else:
+        for col in ['prediction', 'target', 'actual']:
+            if col in X.columns:
+                X = X.drop(columns=[col])
     
     pred = model.predict(X)
     
