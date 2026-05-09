@@ -258,12 +258,18 @@ def explain_predictions(
         ]
         contributions.sort(key=lambda x: abs(x["contribution"]), reverse=True)
         
+        expected_value = getattr(explainer, 'expected_value', 0)
+        if isinstance(expected_value, (list, np.ndarray)):
+            baseline_val = float(expected_value[1] if len(expected_value) > 1 else expected_value[0])
+        else:
+            baseline_val = float(expected_value)
+            
         explanations.append({
             "index": int(idx),
             "prediction": float(df.iloc[idx][prediction_col]),
             "top_positive_features": [c for c in contributions if c["contribution"] > 0][:5],
             "top_negative_features": [c for c in contributions if c["contribution"] < 0][:5],
-            "baseline_value": float(explainer.expected_value if hasattr(explainer, 'expected_value') else 0),
+            "baseline_value": baseline_val,
             "explanation_summary": _generate_explanation_summary(contributions[:3]),
         })
     
