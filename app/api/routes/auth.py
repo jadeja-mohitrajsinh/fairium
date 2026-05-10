@@ -12,7 +12,7 @@ MOCK_USER = {
 }
 
 @router.post("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm)):
     if form_data.username != MOCK_USER["username"] or not verify_password(form_data.password, MOCK_USER["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

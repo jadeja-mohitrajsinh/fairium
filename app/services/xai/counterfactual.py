@@ -475,9 +475,20 @@ def _generate_minimal_change_explanation(changes: Dict) -> str:
     parts = ["To change the prediction, you would need to:"]
     
     for feature, details in changes.items():
-        direction = "increase" if details["change"] > 0 else "decrease"
-        parts.append(
-            f"  - {direction} {feature} from {details['original']:.2f} to {details['new']:.2f}"
-        )
+        orig = details.get('original')
+        new_val = details.get('new')
+        change_val = details.get('change')
+        
+        try:
+            orig_float = float(orig)
+            new_float = float(new_val)
+            direction = "increase" if change_val > 0 else "decrease"
+            parts.append(
+                f"  - {direction} {feature} from {orig_float:.2f} to {new_float:.2f}"
+            )
+        except (ValueError, TypeError):
+            parts.append(
+                f"  - change {feature} from '{orig}' to '{new_val}'"
+            )
     
     return "\n".join(parts)
