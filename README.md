@@ -18,6 +18,7 @@ FairSight Core is a comprehensive bias analysis and mitigation platform that hel
 - **Intersectional bias analysis** - Detects bias across combinations of sensitive attributes
 - **Proxy bias detection** - Identifies features that may indirectly encode sensitive attributes
 - **Text bias analysis** - Hybrid ML + rule-based detection of bias in text (job descriptions, policies, etc.)
+- ** Dark and White theme user control manually
 
 ###  Human-Readable Insights
 - **Plain language explanations** - Clear, actionable descriptions of bias findings
