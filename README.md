@@ -6,13 +6,6 @@ Computer programs now make life-changing decisions about who gets a job, a bank 
 
 FairSight Core is a comprehensive bias analysis and mitigation platform that helps organizations **measure, flag, and fix harmful bias before their systems impact real people**.
 
----
-
-##  Problem Statement
-
-AI systems increasingly make critical decisions affecting human lives. When trained on biased historical data, these systems perpetuate and amplify discrimination against protected groups. Organizations lack accessible tools to detect and mitigate algorithmic bias before deployment.
-
-**Our Solution**: FairSight Core provides an end-to-end platform for detecting, analyzing, and mitigating bias in datasets and AI systems, making fairness accessible to organizations of all sizes.
 
 ---
 
